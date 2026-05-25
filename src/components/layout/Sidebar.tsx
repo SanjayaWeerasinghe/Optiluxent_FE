@@ -1,0 +1,270 @@
+import { useState, useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { Icon } from '../ui'
+
+// ── Data model ────────────────────────────────────────────────────────────────
+
+interface NavLeaf {
+  kind:     'leaf'
+  label:    string
+  icon:     string
+  path:     string
+  section?: string
+}
+
+interface NavGroup {
+  kind:  'group'
+  id:    string
+  label: string
+  icon:  string
+  items: NavLeaf[]
+}
+
+type NavEntry = NavLeaf | NavGroup
+
+const L = (label: string, icon: string, path: string, section?: string): NavLeaf =>
+  ({ kind: 'leaf', label, icon, path, section })
+
+const G = (id: string, label: string, icon: string, items: NavLeaf[]): NavGroup =>
+  ({ kind: 'group', id, label, icon, items })
+
+const NAV: NavEntry[] = [
+  L('Dashboard', 'dashboard', '/'),
+
+  G('procurement', 'Procurement', 'shopping_cart', [
+    L('Purchase Requests', 'receipt_long',  '/procurement', 'pr'),
+    L('Purchase Orders',   'shopping_cart', '/procurement', 'po'),
+    L('Goods Receipts',    'move_to_inbox', '/procurement', 'grn'),
+    L('Purchase Invoices', 'request_quote', '/procurement', 'invoices'),
+  ]),
+
+  G('inventory', 'Inventory', 'inventory_2', [
+    L('Material Requests', 'assignment',  '/inventory', 'mr'),
+    L('Goods Transfers',   'swap_horiz',  '/inventory', 'transfers'),
+    L('Goods Issues',      'output',      '/inventory', 'issues'),
+    L('Stock Adjustments', 'tune',        '/inventory', 'adjustments'),
+    L('Quality Checks',    'verified',    '/inventory', 'qc'),
+    L('Stock Overview',    'inventory_2', '/inventory', 'stock'),
+  ]),
+
+  G('sales', 'Sales', 'point_of_sale', [
+    L('Sales Orders',   'shopping_bag',   '/sales', 'orders'),
+    L('Deliveries',     'local_shipping', '/sales', 'deliveries'),
+    L('Sales Invoices', 'receipt',        '/sales', 'invoices'),
+  ]),
+
+  G('manufacturing', 'Manufacturing', 'factory', [
+    L('Pre-Costing',      'calculate',               '/manufacturing', 'pre-cost'),
+    L('Production Plans', 'event_note',              '/manufacturing', 'plans'),
+    L('Production',       'precision_manufacturing', '/manufacturing', 'production'),
+    L('Post-Costing',     'analytics',               '/manufacturing', 'post-cost'),
+  ]),
+
+  G('data', 'Master Data', 'database', [
+    L('Organization',  'domain',                  '/master-data', 'organization'),
+    L('Financial',     'account_balance',         '/master-data', 'financial'),
+    L('Contacts',      'handshake',               '/master-data', 'contacts'),
+    L('Products',      'inventory',               '/master-data', 'products'),
+    L('Manufacturing', 'precision_manufacturing', '/master-data', 'manufacturing'),
+    L('HR',            'badge',                   '/master-data', 'hr'),
+    L('Inventory',     'warehouse',               '/master-data', 'inventory'),
+  ]),
+
+  G('admin', 'Administration', 'admin_panel_settings', [
+    L('System', 'settings',             '/system'),
+    L('Admin',  'admin_panel_settings', '/admin'),
+  ]),
+]
+
+// ── Active helpers ────────────────────────────────────────────────────────────
+
+function leafActive(leaf: NavLeaf, pathname: string, search: string): boolean {
+  if (leaf.path === '/') return pathname === '/'
+  if (pathname !== leaf.path) return false
+  if (!leaf.section) return true
+  return new URLSearchParams(search).get('section') === leaf.section
+}
+
+function groupHasActive(grp: NavGroup, pathname: string, search: string): boolean {
+  return grp.items.some(l => leafActive(l, pathname, search))
+}
+
+function leafUrl(leaf: NavLeaf): string {
+  return leaf.section ? `${leaf.path}?section=${leaf.section}` : leaf.path
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+interface SidebarProps {
+  open:    boolean
+  onClose: () => void
+}
+
+export function Sidebar({ open, onClose }: SidebarProps) {
+  const { pathname, search } = useLocation()
+
+  const groups = NAV.filter((e): e is NavGroup => e.kind === 'group')
+
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
+    const s = new Set<string>(['procurement'])
+    for (const g of groups) {
+      if (groupHasActive(g, pathname, search)) s.add(g.id)
+    }
+    return s
+  })
+
+  useEffect(() => {
+    setOpenGroups(prev => {
+      const next = new Set(prev)
+      for (const g of groups) {
+        if (groupHasActive(g, pathname, search)) next.add(g.id)
+      }
+      return next
+    })
+  }, [pathname, search]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function toggle(id: string) {
+    setOpenGroups(prev => {
+      const s = new Set(prev)
+      s.has(id) ? s.delete(id) : s.add(id)
+      return s
+    })
+  }
+
+  return (
+    <>
+      {open && (
+        <div className="fixed inset-0 bg-inverse-surface/40 z-30 md:hidden" onClick={onClose} />
+      )}
+
+      <nav
+        aria-label="Main Navigation"
+        className={[
+          'fixed left-0 top-0 h-screen w-64 flex flex-col z-40',
+          'bg-surface-container border-r border-outline-variant',
+          'transition-transform duration-200',
+          open ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+        ].join(' ')}
+      >
+        {/* Brand */}
+        <div className="h-16 px-container-margin border-b border-outline-variant flex items-center gap-3 shrink-0">
+          <div className="w-9 h-9 bg-primary rounded flex items-center justify-center text-on-primary font-bold text-lg select-none">
+            O
+          </div>
+          <div>
+            <h1 className="text-body-md font-body-md font-black text-primary leading-none">
+              Optiluxent
+            </h1>
+            <span className="text-[10px] font-label-mono text-on-surface-variant uppercase tracking-wider">
+              Enterprise ERP
+            </span>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <ul className="flex-1 overflow-y-auto py-2 px-2 flex flex-col gap-0">
+          {NAV.map(entry => {
+            if (entry.kind === 'leaf') {
+              const active = leafActive(entry, pathname, search)
+              return (
+                <li key={entry.path}>
+                  <Link
+                    to={leafUrl(entry)}
+                    onClick={onClose}
+                    className={[
+                      'flex items-center gap-3 px-3 py-2 rounded text-body-sm font-body-sm transition-all',
+                      active
+                        ? 'bg-primary-container text-on-primary-container font-semibold border-r-[3px] border-primary rounded-r-none'
+                        : 'text-on-surface-variant hover:bg-surface-container-high',
+                    ].join(' ')}
+                  >
+                    <Icon name={entry.icon} size={20} filled={active} />
+                    {entry.label}
+                  </Link>
+                </li>
+              )
+            }
+
+            // Group accordion
+            const grp       = entry as NavGroup
+            const isOpen    = openGroups.has(grp.id)
+            const hasActive = groupHasActive(grp, pathname, search)
+
+            return (
+              <li key={grp.id} className="mt-0.5">
+                {/* Group header */}
+                <button
+                  onClick={() => toggle(grp.id)}
+                  className={[
+                    'w-full flex items-center gap-2.5 px-3 py-2 rounded text-left transition-all',
+                    'text-body-sm font-body-sm',
+                    hasActive && !isOpen
+                      ? 'text-primary font-semibold'
+                      : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface',
+                  ].join(' ')}
+                >
+                  <Icon name={grp.icon} size={20} filled={hasActive} />
+                  <span className="flex-1">{grp.label}</span>
+                  <Icon
+                    name="chevron_right"
+                    size={16}
+                    className={`transition-transform duration-150 shrink-0 ${isOpen ? 'rotate-90' : ''}`}
+                  />
+                </button>
+
+                {/* Children */}
+                <ul
+                  className={`overflow-hidden transition-all duration-200 ${
+                    isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 pointer-events-none'
+                  }`}
+                >
+                  {grp.items.map(leaf => {
+                    const active = leafActive(leaf, pathname, search)
+                    return (
+                      <li key={leafUrl(leaf)}>
+                        <Link
+                          to={leafUrl(leaf)}
+                          onClick={onClose}
+                          className={[
+                            'flex items-center gap-2 pl-9 pr-3 py-[6px] rounded text-body-sm font-body-sm transition-all',
+                            active
+                              ? 'bg-primary-container text-on-primary-container font-semibold border-r-[3px] border-primary rounded-r-none'
+                              : 'text-on-surface-variant hover:bg-surface-container-high',
+                          ].join(' ')}
+                        >
+                          <Icon name={leaf.icon} size={16} filled={active} />
+                          {leaf.label}
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </li>
+            )
+          })}
+        </ul>
+
+        {/* Footer */}
+        <div className="border-t border-outline-variant p-2 flex flex-col gap-0.5 shrink-0">
+          <a
+            href="#"
+            className="flex items-center gap-3 px-3 py-2 rounded text-body-sm font-body-sm text-on-surface-variant hover:bg-surface-container-high transition-all"
+          >
+            <Icon name="help" size={20} />
+            Help Center
+          </a>
+          <button
+            className="flex items-center gap-3 px-3 py-2 rounded text-body-sm font-body-sm text-on-surface-variant hover:bg-surface-container-high transition-all w-full text-left"
+            onClick={() => {
+              localStorage.removeItem('access_token')
+              window.location.href = '/login'
+            }}
+          >
+            <Icon name="logout" size={20} />
+            Logout
+          </button>
+        </div>
+      </nav>
+    </>
+  )
+}
