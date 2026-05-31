@@ -81,9 +81,57 @@ async function apiFetch<T>(path: string, init: RequestInit): Promise<T> {
   return parse<T>(res)
 }
 
+// ── Pagination types ──────────────────────────────────────────────────────────
+export interface PageMeta {
+  page:        number
+  per_page:    number
+  total:       number
+  total_pages: number
+}
+
+export interface Paged<T> {
+  data: T[]
+  meta: PageMeta
+}
+
+async function parsePaged<T>(res: Response): Promise<Paged<T>> {
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({})) as Record<string, unknown>
+    const errObj = body.error as Record<string, unknown> | undefined
+    const msg = (errObj?.message ?? body.message ?? `HTTP ${res.status}`) as string
+    throw new Error(msg)
+  }
+  const body = await res.json() as Record<string, unknown>
+  return {
+    data: (body.data as T[]) ?? [],
+    meta: (body.meta as PageMeta) ?? { page: 1, per_page: 20, total: 0, total_pages: 1 },
+  }
+}
+
+async function apiFetchPaged<T>(path: string, init: RequestInit): Promise<Paged<T>> {
+  const request = (token?: string | null) =>
+    fetch(`${BASE}${path}`, { ...init, headers: buildHeaders(token) })
+
+  let res = await request()
+
+  if (res.status === 401) {
+    if (!refreshPromise) {
+      refreshPromise = doRefresh().finally(() => { refreshPromise = null })
+    }
+    const newToken = await refreshPromise
+    res = await request(newToken)
+  }
+
+  return parsePaged<T>(res)
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 export function apiGet<T>(path: string): Promise<T> {
   return apiFetch<T>(path, { method: 'GET' })
+}
+
+export function apiGetPaged<T>(path: string): Promise<Paged<T>> {
+  return apiFetchPaged<T>(path, { method: 'GET' })
 }
 
 export function apiPost<T>(path: string, body: unknown): Promise<T> {

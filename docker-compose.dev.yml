@@ -1,0 +1,27 @@
+version: '3.8'
+
+# Usage:
+#   docker-compose -f docker-compose.dev.yml up --build
+#   docker-compose -f docker-compose.dev.yml down
+
+services:
+  web:
+    build:
+      context:    .
+      dockerfile: Dockerfile.dev
+    container_name: erp-web-dev
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:3000
+    volumes:
+      - .:/app
+      - /app/node_modules   # keep node_modules inside the container
+    networks:
+      - erp-dev-network
+
+networks:
+  erp-dev-network:
+    name: kadahapolabe_erp-dev-network
+    external: true          # reuse the network created by the BE docker-compose
