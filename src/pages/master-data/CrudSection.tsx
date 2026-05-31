@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Button, Input, Select, Badge } from '../../components/ui'
+import { Button, Input, Select, Badge, Pagination } from '../../components/ui'
 import { Table, type Column } from '../../components/ui/Table'
 import { Modal } from '../../components/ui/Modal'
 import { Icon } from '../../components/ui/Icon'
-import { apiGet, apiPost, apiPut, apiDelete } from '../../lib/api'
+import { apiGetPaged, apiPost, apiPut, apiDelete } from '../../lib/api'
 
 export interface SelectOption { value: string | number; label: string }
 
@@ -31,6 +31,8 @@ interface CrudSectionProps<T extends Record<string, unknown>> {
   idKey?:        string
   canDelete?:    boolean
   entityLabel?:  string
+  listParams?:   string                    // appended as ?x=y to GET list only
+  hiddenValues?: Record<string, unknown>  // merged into POST body, not shown in form
 }
 
 export function buildForm(fields: FieldDef[], data?: Record<string, unknown>): Record<string, unknown> {
@@ -53,25 +55,47 @@ export function CrudSection<T extends Record<string, unknown>>({
   idKey = 'id',
   canDelete = true,
   entityLabel = 'Record',
+  listParams,
+  hiddenValues,
 }: CrudSectionProps<T>) {
-  const [data,     setData]     = useState<T[]>([])
-  const [loading,  setLoading]  = useState(true)
-  const [search,   setSearch]   = useState('')
-  const [modal,    setModal]    = useState<'create' | 'edit' | 'delete' | null>(null)
-  const [selected, setSelected] = useState<T | null>(null)
-  const [form,     setForm]     = useState<Record<string, unknown>>({})
-  const [saving,   setSaving]   = useState(false)
-  const [error,    setError]    = useState('')
+  const [data,       setData]       = useState<T[]>([])
+  const [loading,    setLoading]    = useState(true)
+  const [search,     setSearch]     = useState('')
+  const [page,       setPage]       = useState(1)
+  const [perPage,    setPerPage]    = useState(20)
+  const [total,      setTotal]      = useState(0)
+  const [modal,      setModal]      = useState<'create' | 'edit' | 'delete' | null>(null)
+  const [selected,   setSelected]   = useState<T | null>(null)
+  const [form,       setForm]       = useState<Record<string, unknown>>({})
+  const [saving,     setSaving]     = useState(false)
+  const [error,      setError]      = useState('')
 
-  function load() {
+  function load(p: number, pp: number) {
     setLoading(true)
-    apiGet<T[]>(endpoint)
-      .then(rows => setData(Array.isArray(rows) ? rows : []))
+    const params = new URLSearchParams({ page: String(p), per_page: String(pp) })
+    if (listParams) listParams.split('&').forEach(kv => { const [k, v] = kv.split('='); if (k) params.set(k, v ?? '') })
+    apiGetPaged<T>(`${endpoint}?${params}`)
+      .then(({ data: rows, meta }) => {
+        setData(Array.isArray(rows) ? rows : [])
+        setTotal(meta.total)
+      })
       .catch(e => setError(String((e as Error).message)))
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { load() }, [endpoint]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Reset page when the endpoint or list filters change
+  useEffect(() => {
+    setPage(1)
+    setSearch('')
+  }, [endpoint, listParams]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch whenever page, perPage, endpoint, or listParams changes
+  useEffect(() => {
+    load(page, perPage)
+  }, [page, perPage, endpoint, listParams]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handlePageChange(p: number) { setPage(p) }
+  function handlePerPageChange(pp: number) { setPerPage(pp); setPage(1) }
 
   const filtered = useMemo(() => {
     if (!search || searchFields.length === 0) return data
@@ -111,12 +135,12 @@ export function CrudSection<T extends Record<string, unknown>>({
         body[k] = v
       }
       if (modal === 'create') {
-        await apiPost(endpoint, body)
+        await apiPost(endpoint, { ...hiddenValues, ...body })
       } else if (modal === 'edit' && selected) {
         await apiPut(`${endpoint}/${selected[idKey]}`, body)
       }
       setModal(null)
-      load()
+      load(page, perPage)
     } catch (e) {
       setError((e as Error).message ?? 'Save failed')
     } finally {
@@ -131,7 +155,10 @@ export function CrudSection<T extends Record<string, unknown>>({
     try {
       await apiDelete(`${endpoint}/${selected[idKey]}`)
       setModal(null)
-      load()
+      // If we deleted the last item on this page, go back one page
+      const newPage = data.length === 1 && page > 1 ? page - 1 : page
+      setPage(newPage)
+      load(newPage, perPage)
     } catch (e) {
       setError((e as Error).message ?? 'Delete failed')
     } finally {
@@ -178,7 +205,7 @@ export function CrudSection<T extends Record<string, unknown>>({
             placeholder={`Search ${entityLabel.toLowerCase()}s...`}
             iconLeft="search"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setPage(1) }}
             className="max-w-xs"
           />
         )}
@@ -198,6 +225,14 @@ export function CrudSection<T extends Record<string, unknown>>({
         data={filtered}
         loading={loading}
         empty={`No ${entityLabel.toLowerCase()}s found`}
+      />
+
+      <Pagination
+        page={page}
+        perPage={perPage}
+        total={search ? filtered.length : total}
+        onPage={handlePageChange}
+        onPerPage={handlePerPageChange}
       />
 
       {/* Create / Edit */}
