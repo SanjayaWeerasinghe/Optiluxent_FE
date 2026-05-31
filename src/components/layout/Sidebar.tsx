@@ -68,6 +68,8 @@ const NAV: NavEntry[] = [
     L('Manufacturing', 'precision_manufacturing', '/master-data', 'manufacturing'),
     L('HR',            'badge',                   '/master-data', 'hr'),
     L('Inventory',     'warehouse',               '/master-data', 'inventory'),
+    L('Mat. Categories','folder_open',  '/master-data', 'material-categories'),
+    L('Materials',      'layers',       '/master-data', 'materials'),
   ]),
 
   G('admin', 'Administration', 'admin_panel_settings', [
