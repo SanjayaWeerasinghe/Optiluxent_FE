@@ -9,8 +9,16 @@ import { supplierOptions, warehouseOptions, uomOptions, productOptions, purchase
 
 const BASE = '/api/v1/procurement'
 
+const GRN_TYPES = [
+  { value: 'WITH_PO',           label: 'With Purchase Order' },
+  { value: 'WITHOUT_PO',        label: 'Without PO (Ad-hoc)'  },
+  { value: 'CUSTOMER_RETURN',   label: 'Customer Return'      },
+  { value: 'PRODUCTION_RETURN', label: 'Production Return'    },
+]
+
 const GRN_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Code',         key: 'code',         width: '130px' },
+  { header: 'Type',         key: 'grn_type',     width: '160px' },
   { header: 'Receipt Date', key: 'receipt_date', width: '120px' },
   { header: 'Status', key: 'status', width: '120px',
     render: r => <StatusBadge status={String(r.status ?? '')} /> },
@@ -18,12 +26,13 @@ const GRN_COLS: Column<Record<string, unknown>>[] = [
 ]
 
 const GRN_HEADER: FieldDef[] = [
-  { key: 'code',         label: 'Code',         type: 'text',   required: true, placeholder: 'GRN-001' },
+  { key: 'code',         label: 'Code',           type: 'text',   required: true, placeholder: 'GRN-001' },
+  { key: 'grn_type',     label: 'GRN Type',       type: 'select', required: true, options: GRN_TYPES },
   { key: 'po_id',        label: 'Purchase Order', type: 'select', loadOptions: purchaseOrderOptions() },
-  { key: 'supplier_id',  label: 'Supplier',     type: 'select', required: true, loadOptions: supplierOptions() },
-  { key: 'receipt_date', label: 'Receipt Date', type: 'date',   required: true },
-  { key: 'warehouse_id', label: 'Warehouse',    type: 'select', required: true, loadOptions: warehouseOptions() },
-  { key: 'notes',        label: 'Notes',        type: 'textarea', rows: 2, span: true },
+  { key: 'supplier_id',  label: 'Supplier',       type: 'select', required: true, loadOptions: supplierOptions() },
+  { key: 'receipt_date', label: 'Receipt Date',   type: 'date',   required: true },
+  { key: 'warehouse_id', label: 'Warehouse',      type: 'select', required: true, loadOptions: warehouseOptions() },
+  { key: 'notes',        label: 'Notes',          type: 'textarea', rows: 2, span: true },
 ]
 
 const GRN_LINE_FIELDS: FieldDef[] = [

@@ -160,7 +160,12 @@ export function DocDetailModal({
       for (const l of lines.filter(l => l._new && !l._deleted)) {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { _new: _n, _deleted: _d, _localId: _li, ...lineBody } = l
-        await apiPost(`${endpoint}/${id}/${lineEndpointSuffix}`, lineBody)
+        // Strip empty-string fields — Go's JSON decoder rejects "" for numeric
+        // or pointer-uint fields (matches the header save behaviour above).
+        const cleanedLine = Object.fromEntries(
+          Object.entries(lineBody).filter(([, v]) => v !== '')
+        )
+        await apiPost(`${endpoint}/${id}/${lineEndpointSuffix}`, cleanedLine)
       }
 
       onClose()
@@ -281,11 +286,12 @@ export function DocDetailModal({
               loading={actioning === a.action}
               disabled={saving || (actioning !== null && actioning !== a.action)}
               onClick={() => handleAction(a)}
+              data-testid={`workflow-${a.action}`}
             >
               {a.label}
             </Button>
           ))}
-          <Button variant="outline" size="sm" onClick={onClose} disabled={saving || !!actioning}>
+          <Button variant="outline" size="sm" onClick={onClose} disabled={saving || !!actioning} data-testid="doc-close">
             Close
           </Button>
           {isEditable && (
@@ -295,6 +301,7 @@ export function DocDetailModal({
               loading={saving}
               disabled={!!actioning}
               onClick={handleSave}
+              data-testid="doc-save"
             >
               {isCreate ? `Create ${entityLabel}` : 'Save Changes'}
             </Button>
@@ -302,7 +309,7 @@ export function DocDetailModal({
         </div>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-6" data-testid="doc-modal">
         {/* Header form */}
         <div className="relative">
           {headerLoading && (
@@ -318,7 +325,7 @@ export function DocDetailModal({
               ? headerFields.filter(f => !f.editOnly)
               : headerFields.filter(f => !f.createOnly)
             ).map(f => (
-              <div key={f.key} className={f.span ? 'col-span-2' : ''}>
+              <div key={f.key} className={f.span ? 'col-span-2' : ''} data-testid={`field-${f.key}`}>
                 <FieldControl
                   field={f}
                   value={form[f.key]}
@@ -338,7 +345,7 @@ export function DocDetailModal({
                 Line Items
               </span>
               {isEditable && !showAddForm && (
-                <Button variant="outline" size="sm" icon="add" onClick={() => setShowAddForm(true)}>
+                <Button variant="outline" size="sm" icon="add" onClick={() => setShowAddForm(true)} data-testid="line-add">
                   Add Line
                 </Button>
               )}
@@ -358,7 +365,7 @@ export function DocDetailModal({
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   {lineFields.map(f => (
-                    <div key={f.key} className={f.span ? 'col-span-2' : ''}>
+                    <div key={f.key} className={f.span ? 'col-span-2' : ''} data-testid={`line-field-${f.key}`}>
                       <FieldControl
                         field={f}
                         value={addForm[f.key]}
@@ -368,7 +375,7 @@ export function DocDetailModal({
                   ))}
                 </div>
                 <div className="flex gap-2 pt-1">
-                  <Button variant="primary" size="sm" icon="add" onClick={addLine}>
+                  <Button variant="primary" size="sm" icon="add" onClick={addLine} data-testid="line-add-confirm">
                     Add to Lines
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => setShowAddForm(false)}>
