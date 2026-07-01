@@ -1,11 +1,15 @@
+import { lazy, Suspense } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Icon } from '../../components/ui/Icon'
-import { MRSection }         from './MRSection'
-import { TransferSection }   from './TransferSection'
-import { IssueSection }      from './IssueSection'
-import { AdjustmentSection } from './AdjustmentSection'
-import { QCSection }         from './QCSection'
-import { StockSection }      from './StockSection'
+const MRSection         = lazy(() => import('./MRSection').then(m => ({ default: m.MRSection })))
+const TransferSection   = lazy(() => import('./TransferSection').then(m => ({ default: m.TransferSection })))
+const IssueSection      = lazy(() => import('./IssueSection').then(m => ({ default: m.IssueSection })))
+const AdjustmentSection = lazy(() => import('./AdjustmentSection').then(m => ({ default: m.AdjustmentSection })))
+const QCSection         = lazy(() => import('./QCSection').then(m => ({ default: m.QCSection })))
+const StockSection      = lazy(() => import('./StockSection').then(m => ({ default: m.StockSection })))
+const SectionFallback = () => (
+  <div className="py-8 text-center text-on-surface-variant text-body-sm">Loading section…</div>
+)
 
 const SECTIONS = [
   { id: 'mr',          label: 'Material Requests',  icon: 'assignment',  subtitle: 'Internal requests for materials and approvals' },
@@ -34,12 +38,14 @@ export function InventoryPage() {
       </div>
 
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-container-margin shadow-sm">
-        {active === 'mr'          && <MRSection />}
-        {active === 'transfers'   && <TransferSection />}
-        {active === 'issues'      && <IssueSection />}
-        {active === 'adjustments' && <AdjustmentSection />}
-        {active === 'qc'          && <QCSection />}
-        {active === 'stock'       && <StockSection />}
+        <Suspense fallback={<SectionFallback />}>
+          {active === 'mr'          && <MRSection />}
+          {active === 'transfers'   && <TransferSection />}
+          {active === 'issues'      && <IssueSection />}
+          {active === 'adjustments' && <AdjustmentSection />}
+          {active === 'qc'          && <QCSection />}
+          {active === 'stock'       && <StockSection />}
+        </Suspense>
       </div>
     </div>
   )
