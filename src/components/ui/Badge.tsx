@@ -75,6 +75,11 @@ const STATUS_MAP: Record<string, BadgeVariant> = {
 
   // Purchase Invoice
   OVERDUE:         'error',
+
+  // User accounts (lowercase variants from the BE user domain)
+  active:          'success',
+  inactive:        'secondary',
+  suspended:       'error',
 }
 
 export function StatusBadge({ status }: { status: string }) {

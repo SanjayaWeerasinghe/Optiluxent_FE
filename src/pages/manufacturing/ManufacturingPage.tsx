@@ -1,9 +1,13 @@
+import { lazy, Suspense } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Icon } from '../../components/ui/Icon'
-import { PreCostSection }    from './PreCostSection'
-import { PlanSection }       from './PlanSection'
-import { ProductionSection } from './ProductionSection'
-import { PostCostSection }   from './PostCostSection'
+const PreCostSection    = lazy(() => import('./PreCostSection').then(m => ({ default: m.PreCostSection })))
+const PlanSection       = lazy(() => import('./PlanSection').then(m => ({ default: m.PlanSection })))
+const ProductionSection = lazy(() => import('./ProductionSection').then(m => ({ default: m.ProductionSection })))
+const PostCostSection   = lazy(() => import('./PostCostSection').then(m => ({ default: m.PostCostSection })))
+const SectionFallback = () => (
+  <div className="py-8 text-center text-on-surface-variant text-body-sm">Loading section…</div>
+)
 
 const SECTIONS = [
   { id: 'pre-cost',   label: 'Pre-Costing',      icon: 'calculate',               subtitle: 'Estimate material, resource and overhead costs before production' },
@@ -30,10 +34,12 @@ export function ManufacturingPage() {
       </div>
 
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-container-margin shadow-sm">
-        {active === 'pre-cost'   && <PreCostSection />}
-        {active === 'plans'      && <PlanSection />}
-        {active === 'production' && <ProductionSection />}
-        {active === 'post-cost'  && <PostCostSection />}
+        <Suspense fallback={<SectionFallback />}>
+          {active === 'pre-cost'   && <PreCostSection />}
+          {active === 'plans'      && <PlanSection />}
+          {active === 'production' && <ProductionSection />}
+          {active === 'post-cost'  && <PostCostSection />}
+        </Suspense>
       </div>
     </div>
   )

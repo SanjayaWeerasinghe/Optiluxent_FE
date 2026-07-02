@@ -165,3 +165,10 @@ export function productionOrderOptions(): () => Promise<SelectOption[]> {
       .then(rows => rows.map(r => ({ value: r.id, label: r.code })))
       .catch(() => [])
 }
+
+export function materialCategoryOptions(): () => Promise<SelectOption[]> {
+  return () =>
+    apiGet<{ id: number; code: string; name: string }[]>('/api/v1/masterdata/material-categories')
+      .then(rows => rows.map(r => ({ value: r.id, label: `${r.code} – ${r.name}` })))
+      .catch(() => [])
+}

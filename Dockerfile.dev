@@ -1,0 +1,15 @@
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Cache dependency layer
+COPY package.json package-lock.json* ./
+RUN npm install
+
+# Source is volume-mounted at runtime; copy here for the initial image build
+COPY . .
+
+EXPOSE 5173
+
+# Vite must bind to 0.0.0.0 to be reachable from outside the container
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

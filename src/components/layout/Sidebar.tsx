@@ -48,6 +48,7 @@ const NAV: NavEntry[] = [
   ]),
 
   G('sales', 'Sales', 'point_of_sale', [
+    L('Quotations',     'request_quote',  '/sales', 'quotations'),
     L('Sales Orders',   'shopping_bag',   '/sales', 'orders'),
     L('Deliveries',     'local_shipping', '/sales', 'deliveries'),
     L('Sales Invoices', 'receipt',        '/sales', 'invoices'),
@@ -68,11 +69,15 @@ const NAV: NavEntry[] = [
     L('Manufacturing', 'precision_manufacturing', '/master-data', 'manufacturing'),
     L('HR',            'badge',                   '/master-data', 'hr'),
     L('Inventory',     'warehouse',               '/master-data', 'inventory'),
+    L('Mat. Categories','folder_open',  '/master-data', 'material-categories'),
+    L('Materials',      'layers',       '/master-data', 'materials'),
   ]),
 
   G('admin', 'Administration', 'admin_panel_settings', [
-    L('System', 'settings',             '/system'),
-    L('Admin',  'admin_panel_settings', '/admin'),
+    L('Users',       'person',   '/admin', 'users'),
+    L('Roles',       'badge',    '/admin', 'roles'),
+    L('Permissions', 'verified', '/admin', 'permissions'),
+    L('System',      'settings', '/system'),
   ]),
 ]
 

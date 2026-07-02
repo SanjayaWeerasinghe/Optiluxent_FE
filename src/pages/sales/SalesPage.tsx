@@ -1,10 +1,16 @@
+import { lazy, Suspense } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Icon } from '../../components/ui/Icon'
-import { SOSection }           from './SOSection'
-import { DeliverySection }     from './DeliverySection'
-import { SalesInvoiceSection } from './SalesInvoiceSection'
+const SQSection           = lazy(() => import('./SQSection').then(m => ({ default: m.SQSection })))
+const SOSection           = lazy(() => import('./SOSection').then(m => ({ default: m.SOSection })))
+const DeliverySection     = lazy(() => import('./DeliverySection').then(m => ({ default: m.DeliverySection })))
+const SalesInvoiceSection = lazy(() => import('./SalesInvoiceSection').then(m => ({ default: m.SalesInvoiceSection })))
+const SectionFallback = () => (
+  <div className="py-8 text-center text-on-surface-variant text-body-sm">Loading section…</div>
+)
 
 const SECTIONS = [
+  { id: 'quotations', label: 'Quotations',     icon: 'request_quote',  subtitle: 'Price quotes to customers — accept to convert into a Sales Order' },
   { id: 'orders',     label: 'Sales Orders',   icon: 'shopping_bag',   subtitle: 'Customer orders, confirmations and delivery tracking' },
   { id: 'deliveries', label: 'Deliveries',     icon: 'local_shipping', subtitle: 'Goods dispatched to customers and stock decrements' },
   { id: 'invoices',   label: 'Sales Invoices', icon: 'receipt',        subtitle: 'Customer invoices, posting and payment collection' },
@@ -12,7 +18,7 @@ const SECTIONS = [
 
 export function SalesPage() {
   const [searchParams] = useSearchParams()
-  const active  = searchParams.get('section') ?? 'orders'
+  const active  = searchParams.get('section') ?? 'quotations'
   const section = SECTIONS.find(s => s.id === active) ?? SECTIONS[0]
 
   return (
@@ -28,9 +34,12 @@ export function SalesPage() {
       </div>
 
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-container-margin shadow-sm">
-        {active === 'orders'     && <SOSection />}
-        {active === 'deliveries' && <DeliverySection />}
-        {active === 'invoices'   && <SalesInvoiceSection />}
+        <Suspense fallback={<SectionFallback />}>
+          {active === 'quotations' && <SQSection />}
+          {active === 'orders'     && <SOSection />}
+          {active === 'deliveries' && <DeliverySection />}
+          {active === 'invoices'   && <SalesInvoiceSection />}
+        </Suspense>
       </div>
     </div>
   )
