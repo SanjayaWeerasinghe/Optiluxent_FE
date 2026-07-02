@@ -18,13 +18,17 @@ test.describe('Admin — Users & Access', () => {
     const viewer = (users.data.users as Array<{ id: number; email: string; role: string }>)
       .find(u => u.email === 'viewer@kadahapola.com')
     expect(viewer, 'seeded viewer user is required').toBeTruthy()
-    const initialRole = viewer!.role
 
     const roles = await getData<Array<{ id: number; name: string }>>(api, '/api/v1/roles')
     const managerRole = roles.find(r => r.name === 'manager')
-    const originalRole = roles.find(r => r.name === initialRole)
+    const userRole    = roles.find(r => r.name === 'user')
     expect(managerRole, 'manager role must exist').toBeTruthy()
-    expect(originalRole, 'original role must exist').toBeTruthy()
+    expect(userRole,    'user role must exist').toBeTruthy()
+
+    // Guarantee a known starting role so re-runs are idempotent. Ignore
+    // failures — the test asserts on the actual state anyway.
+    await api.put(`/api/v1/users/${viewer!.id}/role`, { data: { role_id: userRole!.id } })
+    const originalRole = userRole  // we just set it
 
     await gotoSection(page, 'admin','users')
 

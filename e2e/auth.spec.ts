@@ -23,7 +23,8 @@ test.describe('Auth', () => {
     await page.locator('button[type="submit"]').click()
 
     // LoginPage calls navigate('/') on success, so URL should no longer be /login.
-    await expect(page).not.toHaveURL(/\/login/, { timeout: 20_000 })
+    // 45s gives the FE room to cold-load on a fresh Vite process.
+    await expect(page).not.toHaveURL(/\/login/, { timeout: 45_000 })
     await ctx.close()
   })
 

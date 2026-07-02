@@ -1,7 +1,12 @@
 // Page-object-ish helpers — shrink the per-spec noise of "click sidebar, click
 // new, fill field, save, click confirm".
+//
+// Each helper calls `autoSnap(...)` at meaningful moments so specs that use
+// these helpers automatically produce a screenshot storyline via the reporter
+// fixture. Specs that want extra shots can pull the `snap` fixture directly.
 import type { Page, Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
+import { autoSnap } from './reporter'
 
 export type ModuleKey = 'procurement' | 'sales' | 'inventory' | 'manufacturing' | 'admin'
 
@@ -11,6 +16,7 @@ export async function gotoSection(page: Page, module: ModuleKey, section: string
   // Wait for the lazy section chunk to mount — Suspense fallback shows "Loading section…"
   // We then wait for either the search input or the "New" button to render.
   await page.locator('button:has-text("New"), input[placeholder*="Search"]').first().waitFor({ timeout: 15_000 })
+  await autoSnap(page,`section ${module}/${section} loaded`)
 }
 
 /** Click "New <X>" toolbar button. The Button component prefixes an icon glyph
@@ -19,6 +25,7 @@ export async function clickNewRecord(page: Page) {
   const newBtn = page.locator('button', { hasText: /New\s/ }).first()
   await newBtn.click()
   await expect(page.getByTestId('doc-modal')).toBeVisible()
+  await autoSnap(page,'new record modal opened')
 }
 
 /** Fill a header form field located by the `field-<key>` data-testid wrapper. */
@@ -61,29 +68,37 @@ export async function addLine(
   await page.getByTestId('line-add').click()
   for (const [k, v] of Object.entries(fields)) await fillLineField(page, k, v)
   for (const [k, v] of Object.entries(selects)) await selectLineField(page, k, v)
+  await autoSnap(page,'line form filled')
   await page.getByTestId('line-add-confirm').click()
+  await autoSnap(page,'line added to grid')
 }
 
 export async function saveDoc(page: Page) {
+  await autoSnap(page,'modal filled before save')
   await page.getByTestId('doc-save').click()
   // Modal closes on success. If it stays open, the footer error message tells
   // us what went wrong — surface that into the assertion message.
   try {
     await expect(page.getByTestId('doc-modal')).not.toBeVisible({ timeout: 15_000 })
+    await autoSnap(page,'after save')
   } catch (e) {
     // Pull the modal footer error (matches "text-error" + label-mono inline error)
     const errMsg = await page.locator('.text-error.flex.items-center').first().textContent().catch(() => null)
     const bodyText = await page.getByTestId('doc-modal').textContent().catch(() => null)
+    await autoSnap(page,'save failed')
     throw new Error(`Save did not close modal.\nFooter error: ${errMsg}\nModal body sample: ${bodyText?.slice(0, 400)}`)
   }
 }
 
 export async function runWorkflow(page: Page, action: string) {
+  await autoSnap(page,`before workflow ${action}`)
   await page.getByTestId(`workflow-${action}`).click()
   try {
     await expect(page.getByTestId('doc-modal')).not.toBeVisible({ timeout: 15_000 })
+    await autoSnap(page,`after workflow ${action}`)
   } catch (e) {
     const errMsg = await page.locator('.text-error.flex.items-center').first().textContent().catch(() => null)
+    await autoSnap(page,`workflow ${action} failed`)
     throw new Error(`Workflow action "${action}" did not close the modal. Footer error: ${errMsg ?? '(none)'}`)
   }
 }
@@ -92,6 +107,7 @@ export async function runWorkflow(page: Page, action: string) {
 export async function openDocByCode(page: Page, code: string) {
   await page.getByRole('cell', { name: code, exact: true }).click()
   await expect(page.getByTestId('doc-modal')).toBeVisible()
+  await autoSnap(page,`opened ${code}`)
 }
 
 /** Find a list row by code and return its locator (useful for asserting status badges). */
