@@ -3,13 +3,15 @@ import { Button, Input } from '../../components/ui'
 import { Table, type Column } from '../../components/ui/Table'
 import { StatusBadge } from '../../components/ui/Badge'
 import { apiGet } from '../../lib/api'
+import { LookupCell } from '../../lib/lookups'
 import { ProductionModal } from './ProductionModal'
 
 const BASE = '/api/v1/manufacturing'
 
 const ORDER_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Code',        key: 'code',        width: '120px' },
-  { header: 'Product',     key: 'product_id',  width: '90px' },
+  { header: 'Product',     key: 'product_id',  width: '180px',
+    render: r => <LookupCell kind="product" id={r.product_id as number} /> },
   { header: 'Planned Qty', key: 'planned_qty', width: '100px', align: 'right' },
   { header: 'Produced',    key: 'produced_qty', width: '90px',  align: 'right' },
   { header: 'Start Date',  key: 'start_date',  width: '110px' },

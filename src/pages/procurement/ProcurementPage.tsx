@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { Icon } from '../../components/ui/Icon'
 // Sections are lazy-loaded — only the active section's chunk is fetched.
 // Cuts cold-load of /procurement by ~80% (was pulling all 4 section trees).
+const DashboardSection = lazy(() => import('./DashboardSection').then(m => ({ default: m.DashboardSection })))
 const PRSection      = lazy(() => import('./PRSection').then(m => ({ default: m.PRSection })))
 const POSection      = lazy(() => import('./POSection').then(m => ({ default: m.POSection })))
 const GRNSection     = lazy(() => import('./GRNSection').then(m => ({ default: m.GRNSection })))
@@ -13,6 +14,7 @@ const SectionFallback = () => (
 )
 
 const SECTIONS = [
+  { id: 'dashboard',label: 'Dashboard',         icon: 'analytics',     subtitle: 'Requests, POs, GRNs and spend at a glance' },
   { id: 'pr',       label: 'Purchase Requests', icon: 'receipt_long',  subtitle: 'Internal purchase requests and approval workflow' },
   { id: 'po',       label: 'Purchase Orders',   icon: 'shopping_cart', subtitle: 'Orders placed with suppliers' },
   { id: 'grn',      label: 'Goods Receipts',    icon: 'move_to_inbox', subtitle: 'Receive goods against purchase orders' },
@@ -21,7 +23,7 @@ const SECTIONS = [
 
 export function ProcurementPage() {
   const [searchParams] = useSearchParams()
-  const active  = searchParams.get('section') ?? 'pr'
+  const active  = searchParams.get('section') ?? 'dashboard'
   const section = SECTIONS.find(s => s.id === active) ?? SECTIONS[0]
 
   return (
@@ -38,6 +40,7 @@ export function ProcurementPage() {
 
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-container-margin shadow-sm">
         <Suspense fallback={<SectionFallback />}>
+          {active === 'dashboard'&& <DashboardSection />}
           {active === 'pr'       && <PRSection />}
           {active === 'po'       && <POSection />}
           {active === 'grn'      && <GRNSection />}

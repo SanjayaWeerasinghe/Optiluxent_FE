@@ -3,6 +3,7 @@ import { Button, Input } from '../../components/ui'
 import { Table, type Column } from '../../components/ui/Table'
 import { StatusBadge } from '../../components/ui/Badge'
 import { apiGet } from '../../lib/api'
+import { LookupCell } from '../../lib/lookups'
 import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from './DocDetailModal'
 import {
@@ -50,8 +51,12 @@ const INV_LINE_FIELDS: FieldDef[] = [
 
 const INV_LINE_COLS: Column<Record<string, unknown>>[] = [
   { header: '#',           key: 'line_number', width: '44px', align: 'center' },
+  { header: 'Product',     key: 'product_id',  width: '180px',
+    render: r => <LookupCell kind="product" id={r.product_id as number} /> },
   { header: 'Description', key: 'description' },
   { header: 'Qty',         key: 'quantity',   width: '70px', align: 'right' },
+  { header: 'UOM',         key: 'uom_id',     width: '90px',
+    render: r => <LookupCell kind="uom" id={r.uom_id as number} /> },
   { header: 'Unit Price',  key: 'unit_price', width: '100px', align: 'right',
     render: r => Number(r.unit_price ?? 0).toFixed(2) },
   { header: 'Tax',         key: 'tax_amount', width: '80px', align: 'right',

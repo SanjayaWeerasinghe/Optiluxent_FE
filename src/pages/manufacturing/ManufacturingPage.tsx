@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Icon } from '../../components/ui/Icon'
+const DashboardSection  = lazy(() => import('./DashboardSection').then(m => ({ default: m.DashboardSection })))
 const PreCostSection    = lazy(() => import('./PreCostSection').then(m => ({ default: m.PreCostSection })))
 const PlanSection       = lazy(() => import('./PlanSection').then(m => ({ default: m.PlanSection })))
 const ProductionSection = lazy(() => import('./ProductionSection').then(m => ({ default: m.ProductionSection })))
@@ -10,6 +11,7 @@ const SectionFallback = () => (
 )
 
 const SECTIONS = [
+  { id: 'dashboard',  label: 'Dashboard',         icon: 'analytics',               subtitle: 'Overview of production activity, planned vs produced, QC + wastage' },
   { id: 'pre-cost',   label: 'Pre-Costing',      icon: 'calculate',               subtitle: 'Estimate material, resource and overhead costs before production' },
   { id: 'plans',      label: 'Production Plans',  icon: 'event_note',              subtitle: 'Schedule and manage planned production runs' },
   { id: 'production', label: 'Production',        icon: 'precision_manufacturing', subtitle: 'Record products manufactured and resources consumed' },
@@ -18,7 +20,7 @@ const SECTIONS = [
 
 export function ManufacturingPage() {
   const [searchParams] = useSearchParams()
-  const active  = searchParams.get('section') ?? 'pre-cost'
+  const active  = searchParams.get('section') ?? 'dashboard'
   const section = SECTIONS.find(s => s.id === active) ?? SECTIONS[0]
 
   return (
@@ -35,6 +37,7 @@ export function ManufacturingPage() {
 
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-container-margin shadow-sm">
         <Suspense fallback={<SectionFallback />}>
+          {active === 'dashboard'  && <DashboardSection />}
           {active === 'pre-cost'   && <PreCostSection />}
           {active === 'plans'      && <PlanSection />}
           {active === 'production' && <ProductionSection />}

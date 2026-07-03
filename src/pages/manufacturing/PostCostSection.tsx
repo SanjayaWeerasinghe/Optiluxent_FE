@@ -3,6 +3,7 @@ import { Button, Input } from '../../components/ui'
 import { Table, type Column } from '../../components/ui/Table'
 import { StatusBadge } from '../../components/ui/Badge'
 import { apiGet } from '../../lib/api'
+import { LookupCell } from '../../lib/lookups'
 import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from '../procurement/DocDetailModal'
 import { productionOrderOptions, costEstimateOptions } from '../master-data/useOptions'
@@ -11,7 +12,8 @@ const BASE = '/api/v1/manufacturing'
 
 const POSTCOST_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Code',        key: 'code',             width: '120px' },
-  { header: 'Order',       key: 'order_id',         width: '80px' },
+  { header: 'Order',       key: 'order_id',         width: '120px',
+    render: r => <LookupCell kind="productionOrder" id={r.order_id as number} /> },
   { header: 'Actual Total', key: 'total_actual_cost', width: '120px', align: 'right',
     render: r => Number(r.total_actual_cost ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) },
   { header: 'Est. Total',  key: 'total_estimated_cost', width: '120px', align: 'right',

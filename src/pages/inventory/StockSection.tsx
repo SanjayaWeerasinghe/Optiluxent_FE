@@ -3,6 +3,7 @@ import { Button, Select } from '../../components/ui'
 import { Table, type Column } from '../../components/ui/Table'
 import { Tabs, type TabItem } from '../../components/ui/Tabs'
 import { apiGet } from '../../lib/api'
+import { LookupCell } from '../../lib/lookups'
 import { type SelectOption } from '../master-data/CrudSection'
 
 const BASE_STOCK = '/api/v1/inventory/stock'
@@ -17,9 +18,11 @@ const TABS: TabItem[] = [
 
 // ── Balance ───────────────────────────────────────────────────────────────────
 const BAL_COLS: Column<Record<string, unknown>>[] = [
-  { header: 'Product ID',   key: 'product_id',   width: '100px' },
-  { header: 'Warehouse ID', key: 'warehouse_id', width: '110px' },
-  { header: 'Location ID',  key: 'location_id',  width: '100px' },
+  { header: 'Product',     key: 'product_id',   width: '180px',
+    render: r => <LookupCell kind="product" id={r.product_id as number} /> },
+  { header: 'Warehouse',   key: 'warehouse_id', width: '160px',
+    render: r => <LookupCell kind="warehouse" id={r.warehouse_id as number} /> },
+  { header: 'Location ID', key: 'location_id',  width: '100px' },
   { header: 'Quantity', key: 'quantity', width: '100px', align: 'right',
     render: r => Number(r.quantity ?? 0).toLocaleString(undefined, { maximumFractionDigits: 3 }) },
   { header: 'Total Cost', key: 'total_cost', width: '110px', align: 'right',
@@ -31,8 +34,10 @@ const LEDGER_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Date',       key: 'transaction_date', width: '120px' },
   { header: 'Type',       key: 'transaction_type', width: '130px' },
   { header: 'Ref. Type',  key: 'reference_type',   width: '110px' },
-  { header: 'Product ID', key: 'product_id',        width: '100px' },
-  { header: 'Warehouse',  key: 'warehouse_id',      width: '100px' },
+  { header: 'Product',    key: 'product_id',       width: '180px',
+    render: r => <LookupCell kind="product" id={r.product_id as number} /> },
+  { header: 'Warehouse',  key: 'warehouse_id',     width: '160px',
+    render: r => <LookupCell kind="warehouse" id={r.warehouse_id as number} /> },
   { header: 'Qty', key: 'quantity', width: '90px', align: 'right',
     render: r => {
       const q = Number(r.quantity ?? 0)

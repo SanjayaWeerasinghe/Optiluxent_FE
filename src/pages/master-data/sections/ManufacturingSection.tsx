@@ -3,6 +3,7 @@ import { Tabs, type TabItem } from '../../../components/ui/Tabs'
 import { Badge } from '../../../components/ui'
 import { CrudSection, ActiveBadge, type FieldDef } from '../CrudSection'
 import { type Column } from '../../../components/ui/Table'
+import { LookupCell } from '../../../lib/lookups'
 import { currencyOptions, uomOptions, productOptions } from '../useOptions'
 
 const ENTITY_TABS: TabItem[] = [
@@ -42,7 +43,8 @@ const BOM_TYPES = [
 
 const BOM_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Code',    key: 'code',     width: '120px' },
-  { header: 'Product', key: 'product_id', width: '100px' },
+  { header: 'Product', key: 'product_id', width: '180px',
+    render: r => <LookupCell kind="product" id={r.product_id as number} /> },
   {
     header: 'Type', key: 'bom_type', width: '110px',
     render: r => <Badge variant="info">{String(r.bom_type ?? '')}</Badge>,
@@ -63,7 +65,8 @@ const BOM_FIELDS: FieldDef[] = [
 // ── Routings ──────────────────────────────────────────────────────────────────
 const RT_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Code',    key: 'code',       width: '120px' },
-  { header: 'Product', key: 'product_id', width: '100px' },
+  { header: 'Product', key: 'product_id', width: '180px',
+    render: r => <LookupCell kind="product" id={r.product_id as number} /> },
   { header: 'Status', key: 'is_active', width: '90px', render: r => <ActiveBadge value={r.is_active} /> },
 ]
 

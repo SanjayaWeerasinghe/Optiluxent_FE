@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Icon } from '../../components/ui/Icon'
+const DashboardSection    = lazy(() => import('./DashboardSection').then(m => ({ default: m.DashboardSection })))
 const SQSection           = lazy(() => import('./SQSection').then(m => ({ default: m.SQSection })))
 const SOSection           = lazy(() => import('./SOSection').then(m => ({ default: m.SOSection })))
 const DeliverySection     = lazy(() => import('./DeliverySection').then(m => ({ default: m.DeliverySection })))
@@ -10,6 +11,7 @@ const SectionFallback = () => (
 )
 
 const SECTIONS = [
+  { id: 'dashboard',  label: 'Dashboard',      icon: 'analytics',      subtitle: 'Revenue, orders, deliveries and invoices at a glance' },
   { id: 'quotations', label: 'Quotations',     icon: 'request_quote',  subtitle: 'Price quotes to customers — accept to convert into a Sales Order' },
   { id: 'orders',     label: 'Sales Orders',   icon: 'shopping_bag',   subtitle: 'Customer orders, confirmations and delivery tracking' },
   { id: 'deliveries', label: 'Deliveries',     icon: 'local_shipping', subtitle: 'Goods dispatched to customers and stock decrements' },
@@ -18,7 +20,7 @@ const SECTIONS = [
 
 export function SalesPage() {
   const [searchParams] = useSearchParams()
-  const active  = searchParams.get('section') ?? 'quotations'
+  const active  = searchParams.get('section') ?? 'dashboard'
   const section = SECTIONS.find(s => s.id === active) ?? SECTIONS[0]
 
   return (
@@ -35,6 +37,7 @@ export function SalesPage() {
 
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-container-margin shadow-sm">
         <Suspense fallback={<SectionFallback />}>
+          {active === 'dashboard'  && <DashboardSection />}
           {active === 'quotations' && <SQSection />}
           {active === 'orders'     && <SOSection />}
           {active === 'deliveries' && <DeliverySection />}

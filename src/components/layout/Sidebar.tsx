@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Icon } from '../ui'
 
 // ── Data model ────────────────────────────────────────────────────────────────
@@ -13,11 +13,17 @@ interface NavLeaf {
 }
 
 interface NavGroup {
-  kind:  'group'
-  id:    string
-  label: string
-  icon:  string
-  items: NavLeaf[]
+  kind:      'group'
+  id:        string
+  label:     string
+  icon:      string
+  items:     NavLeaf[]
+  /** If set, clicking the group header navigates here AND opens the
+   * accordion. Chevron alone still toggles the accordion. Modules with a
+   * landing dashboard (procurement, inventory, sales, manufacturing) set
+   * this; groups without (master data, admin) leave it undefined so the
+   * header behaves as a pure accordion toggle. */
+  dashUrl?:  string
 }
 
 type NavEntry = NavLeaf | NavGroup
@@ -25,41 +31,45 @@ type NavEntry = NavLeaf | NavGroup
 const L = (label: string, icon: string, path: string, section?: string): NavLeaf =>
   ({ kind: 'leaf', label, icon, path, section })
 
-const G = (id: string, label: string, icon: string, items: NavLeaf[]): NavGroup =>
-  ({ kind: 'group', id, label, icon, items })
+const G = (id: string, label: string, icon: string, items: NavLeaf[], dashUrl?: string): NavGroup =>
+  ({ kind: 'group', id, label, icon, items, dashUrl })
 
 const NAV: NavEntry[] = [
-  L('Dashboard', 'dashboard', '/'),
+  L('Dashboard', 'analytics', '/'),
 
   G('procurement', 'Procurement', 'shopping_cart', [
+    L('Dashboard',         'analytics',  '/procurement', 'dashboard'),
     L('Purchase Requests', 'receipt_long',  '/procurement', 'pr'),
     L('Purchase Orders',   'shopping_cart', '/procurement', 'po'),
     L('Goods Receipts',    'move_to_inbox', '/procurement', 'grn'),
     L('Purchase Invoices', 'request_quote', '/procurement', 'invoices'),
-  ]),
+  ], '/procurement?section=dashboard'),
 
   G('inventory', 'Inventory', 'inventory_2', [
+    L('Dashboard',         'analytics','/inventory', 'dashboard'),
     L('Material Requests', 'assignment',  '/inventory', 'mr'),
     L('Goods Transfers',   'swap_horiz',  '/inventory', 'transfers'),
     L('Goods Issues',      'output',      '/inventory', 'issues'),
     L('Stock Adjustments', 'tune',        '/inventory', 'adjustments'),
     L('Quality Checks',    'verified',    '/inventory', 'qc'),
     L('Stock Overview',    'inventory_2', '/inventory', 'stock'),
-  ]),
+  ], '/inventory?section=dashboard'),
 
   G('sales', 'Sales', 'point_of_sale', [
+    L('Dashboard',      'analytics',      '/sales', 'dashboard'),
     L('Quotations',     'request_quote',  '/sales', 'quotations'),
     L('Sales Orders',   'shopping_bag',   '/sales', 'orders'),
     L('Deliveries',     'local_shipping', '/sales', 'deliveries'),
     L('Sales Invoices', 'receipt',        '/sales', 'invoices'),
-  ]),
+  ], '/sales?section=dashboard'),
 
   G('manufacturing', 'Manufacturing', 'factory', [
+    L('Dashboard',        'analytics',               '/manufacturing', 'dashboard'),
     L('Pre-Costing',      'calculate',               '/manufacturing', 'pre-cost'),
     L('Production Plans', 'event_note',              '/manufacturing', 'plans'),
     L('Production',       'precision_manufacturing', '/manufacturing', 'production'),
     L('Post-Costing',     'analytics',               '/manufacturing', 'post-cost'),
-  ]),
+  ], '/manufacturing?section=dashboard'),
 
   G('data', 'Master Data', 'database', [
     L('Organization',  'domain',                  '/master-data', 'organization'),
@@ -107,6 +117,7 @@ interface SidebarProps {
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const { pathname, search } = useLocation()
+  const navigate = useNavigate()
 
   const groups = NAV.filter((e): e is NavGroup => e.kind === 'group')
 
@@ -197,25 +208,45 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
             return (
               <li key={grp.id} className="mt-0.5">
-                {/* Group header */}
-                <button
-                  onClick={() => toggle(grp.id)}
-                  className={[
-                    'w-full flex items-center gap-2.5 px-3 py-2 rounded text-left transition-all',
-                    'text-body-sm font-body-sm',
-                    hasActive && !isOpen
-                      ? 'text-primary font-semibold'
-                      : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface',
-                  ].join(' ')}
-                >
-                  <Icon name={grp.icon} size={20} filled={hasActive} />
-                  <span className="flex-1">{grp.label}</span>
-                  <Icon
-                    name="chevron_right"
-                    size={16}
-                    className={`transition-transform duration-150 shrink-0 ${isOpen ? 'rotate-90' : ''}`}
-                  />
-                </button>
+                {/* Group header — main body navigates to dashboard (if any)
+                    and opens the accordion; chevron alone toggles open/closed. */}
+                <div className={[
+                  'flex items-center rounded transition-colors',
+                  hasActive && !isOpen
+                    ? 'text-primary font-semibold'
+                    : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface',
+                ].join(' ')}>
+                  <button
+                    onClick={() => {
+                      if (grp.dashUrl) {
+                        navigate(grp.dashUrl)
+                        setOpenGroups(prev => {
+                          if (prev.has(grp.id)) return prev
+                          const next = new Set(prev); next.add(grp.id)
+                          return next
+                        })
+                        onClose()
+                      } else {
+                        toggle(grp.id)
+                      }
+                    }}
+                    className="flex-1 flex items-center gap-2.5 px-3 py-2 text-left text-body-sm font-body-sm"
+                  >
+                    <Icon name={grp.icon} size={20} filled={hasActive} />
+                    <span>{grp.label}</span>
+                  </button>
+                  <button
+                    onClick={() => toggle(grp.id)}
+                    aria-label={isOpen ? `Collapse ${grp.label}` : `Expand ${grp.label}`}
+                    className="p-2 mr-1 rounded hover:bg-surface-container-highest"
+                  >
+                    <Icon
+                      name="chevron_right"
+                      size={16}
+                      className={`transition-transform duration-150 shrink-0 ${isOpen ? 'rotate-90' : ''}`}
+                    />
+                  </button>
+                </div>
 
                 {/* Children */}
                 <ul

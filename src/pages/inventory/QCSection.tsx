@@ -3,6 +3,7 @@ import { Button, Input } from '../../components/ui'
 import { Table, type Column } from '../../components/ui/Table'
 import { StatusBadge } from '../../components/ui/Badge'
 import { apiGet } from '../../lib/api'
+import { LookupCell } from '../../lib/lookups'
 import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from '../procurement/DocDetailModal'
 import { warehouseOptions, productOptions } from '../master-data/useOptions'
@@ -43,7 +44,8 @@ const QC_LINE_FIELDS: FieldDef[] = [
 
 const QC_LINE_COLS: Column<Record<string, unknown>>[] = [
   { header: '#',           key: 'line_number',     width: '44px', align: 'center' },
-  { header: 'Product ID',  key: 'product_id',      width: '90px' },
+  { header: 'Product',     key: 'product_id',      width: '180px',
+    render: r => <LookupCell kind="product" id={r.product_id as number} /> },
   { header: 'Checked',     key: 'qty_checked',     width: '80px', align: 'right' },
   { header: 'Passed',      key: 'qty_passed',      width: '80px', align: 'right' },
   { header: 'Failed',      key: 'qty_failed',      width: '80px', align: 'right' },

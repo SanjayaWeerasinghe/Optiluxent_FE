@@ -4,6 +4,7 @@ import { Badge } from '../../../components/ui'
 import { CrudSection, ActiveBadge, type FieldDef } from '../CrudSection'
 import { type Column } from '../../../components/ui/Table'
 import { currencyOptions, coaOptions, bankOptions, fiscalYearOptions } from '../useOptions'
+import { LookupCell } from '../../../lib/lookups'
 
 const ENTITY_TABS: TabItem[] = [
   { id: 'currencies',    label: 'Currencies',        icon: 'currency_exchange' },
@@ -37,8 +38,10 @@ const CUR_FIELDS: FieldDef[] = [
 
 // ── Exchange Rates ────────────────────────────────────────────────────────────
 const ER_COLS: Column<Record<string, unknown>>[] = [
-  { header: 'From', key: 'from_currency_id', width: '80px' },
-  { header: 'To',   key: 'to_currency_id',   width: '80px' },
+  { header: 'From', key: 'from_currency_id', width: '160px',
+    render: r => <LookupCell kind="currency" id={r.from_currency_id as number} /> },
+  { header: 'To',   key: 'to_currency_id',   width: '160px',
+    render: r => <LookupCell kind="currency" id={r.to_currency_id as number} /> },
   { header: 'Rate', key: 'rate',             width: '100px', align: 'right',
     render: r => Number(r.rate ?? 0).toFixed(6) },
   { header: 'Effective Date', key: 'effective_date', width: '130px' },
@@ -150,6 +153,10 @@ const BANK_FIELDS: FieldDef[] = [
 const BA_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Account No.',  key: 'account_number', width: '150px' },
   { header: 'Account Name', key: 'account_name' },
+  { header: 'Bank',     key: 'bank_id',      width: '160px',
+    render: r => <LookupCell kind="bank" id={r.bank_id as number} /> },
+  { header: 'Currency', key: 'currency_id',  width: '110px',
+    render: r => <LookupCell kind="currency" id={r.currency_id as number} /> },
   { header: 'Default', key: 'is_default', width: '80px', align: 'center',
     render: r => r.is_default ? <Badge variant="primary">Default</Badge> : null },
   { header: 'Status', key: 'is_active', width: '90px', render: r => <ActiveBadge value={r.is_active} /> },

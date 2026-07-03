@@ -3,6 +3,7 @@ import { Button, Input } from '../../components/ui'
 import { Table, type Column } from '../../components/ui/Table'
 import { StatusBadge } from '../../components/ui/Badge'
 import { apiGet } from '../../lib/api'
+import { LookupCell } from '../../lib/lookups'
 import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from '../procurement/DocDetailModal'
 import {
@@ -13,7 +14,8 @@ const BASE = '/api/v1/manufacturing'
 
 const ESTIMATE_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Code',        key: 'code',                  width: '120px' },
-  { header: 'Product',     key: 'product_id',            width: '90px' },
+  { header: 'Product',     key: 'product_id',            width: '180px',
+    render: r => <LookupCell kind="product" id={r.product_id as number} /> },
   { header: 'Planned Qty', key: 'planned_qty',           width: '100px', align: 'right' },
   { header: 'Est. Material', key: 'estimated_material_cost', width: '120px', align: 'right',
     render: r => Number(r.estimated_material_cost ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) },
