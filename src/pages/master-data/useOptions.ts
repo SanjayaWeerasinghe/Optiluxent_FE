@@ -106,6 +106,17 @@ export function purchaseOrderOptions(): () => Promise<SelectOption[]> {
       .catch(() => [])
 }
 
+export function manufacturingOrderOptions(): () => Promise<SelectOption[]> {
+  return () =>
+    apiGet<{ id: number; code: string; status: string }[]>('/api/v1/manufacturing/orders')
+      .then(rows =>
+        rows
+          .filter(r => r.status !== 'CANCELLED')
+          .map(r => ({ value: r.id, label: `${r.code} (${r.status})` }))
+      )
+      .catch(() => [])
+}
+
 export function customerOptions(): () => Promise<SelectOption[]> {
   return () =>
     apiGet<{ id: number; code: string; name: string; party_type: string }[]>('/api/v1/masterdata/contacts/parties')

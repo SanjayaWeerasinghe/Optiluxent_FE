@@ -3,9 +3,10 @@ import { Button, Input } from '../../components/ui'
 import { Table, type Column } from '../../components/ui/Table'
 import { StatusBadge } from '../../components/ui/Badge'
 import { apiGet } from '../../lib/api'
+import { LookupCell } from '../../lib/lookups'
 import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from '../procurement/DocDetailModal'
-import { warehouseOptions, productOptions, uomOptions } from '../master-data/useOptions'
+import { warehouseOptions, productOptions, uomOptions, manufacturingOrderOptions } from '../master-data/useOptions'
 
 const BASE = '/api/v1/inventory'
 
@@ -28,12 +29,20 @@ const GI_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Notes', key: 'notes' },
 ]
 
+const REF_TYPES = [
+  { value: '',                 label: 'None (standalone)' },
+  { value: 'PRODUCTION_ORDER', label: 'Manufacturing Order' },
+]
+
 const GI_HEADER: FieldDef[] = [
-  { key: 'code',         label: 'Code',         type: 'text',   required: true, placeholder: 'GI-001' },
-  { key: 'issue_date',   label: 'Issue Date',   type: 'date',   required: true },
-  { key: 'warehouse_id', label: 'Warehouse',    type: 'select', required: true, loadOptions: warehouseOptions() },
-  { key: 'issue_reason', label: 'Issue Reason', type: 'select', required: true, options: ISSUE_REASONS },
-  { key: 'notes',        label: 'Notes',        type: 'textarea', rows: 2, span: true },
+  { key: 'code',           label: 'Code',           type: 'text',   required: true, placeholder: 'GI-001' },
+  { key: 'issue_date',     label: 'Issue Date',     type: 'date',   required: true },
+  { key: 'warehouse_id',   label: 'Warehouse',      type: 'select', required: true, loadOptions: warehouseOptions() },
+  { key: 'issue_reason',   label: 'Issue Reason',   type: 'select', required: true, options: ISSUE_REASONS },
+  { key: 'reference_type', label: 'Reference Type', type: 'select', options: REF_TYPES },
+  // reference_id is a plain MO picker; the user only picks one when reference_type = PRODUCTION_ORDER
+  { key: 'reference_id',   label: 'Reference (MO)', type: 'select', loadOptions: manufacturingOrderOptions() },
+  { key: 'notes',          label: 'Notes',          type: 'textarea', rows: 2, span: true },
 ]
 
 const GI_LINE_FIELDS: FieldDef[] = [
@@ -46,8 +55,11 @@ const GI_LINE_FIELDS: FieldDef[] = [
 
 const GI_LINE_COLS: Column<Record<string, unknown>>[] = [
   { header: '#',          key: 'line_number', width: '44px', align: 'center' },
-  { header: 'Product ID', key: 'product_id',  width: '90px' },
+  { header: 'Product',    key: 'product_id',  width: '180px',
+    render: r => <LookupCell kind="product" id={r.product_id as number} /> },
   { header: 'Qty',        key: 'quantity',    width: '80px', align: 'right' },
+  { header: 'UOM',        key: 'uom_id',      width: '90px',
+    render: r => <LookupCell kind="uom" id={r.uom_id as number} /> },
   { header: 'Unit Cost',  key: 'unit_cost',   width: '100px', align: 'right',
     render: r => Number(r.unit_cost ?? 0).toFixed(2) },
   { header: 'Total Cost', key: 'total_cost',  width: '100px', align: 'right',

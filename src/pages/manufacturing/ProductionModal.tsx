@@ -5,8 +5,10 @@ import { Table, type Column } from '../../components/ui/Table'
 import { Icon } from '../../components/ui/Icon'
 import { StatusBadge } from '../../components/ui/Badge'
 import { apiGet, apiPost, apiPut, apiDelete } from '../../lib/api'
+import { LookupCell } from '../../lib/lookups'
 import { FieldControl, buildForm, type FieldDef } from '../master-data/CrudSection'
 import { AuditLogPanel } from '../procurement/AuditLogPanel'
+import { MODashboard } from './MODashboard'
 import {
   productOptions, uomOptions, warehouseOptions,
   productionPlanOptions, workCenterOptions,
@@ -55,8 +57,11 @@ const RESOURCE_FIELDS: FieldDef[] = [
 
 const OUTPUT_COLS: Column<Record<string, unknown>>[] = [
   { header: '#',         key: 'line_number', width: '44px', align: 'center' },
-  { header: 'Product',   key: 'product_id',  width: '90px' },
+  { header: 'Product',   key: 'product_id',  width: '180px',
+    render: r => <LookupCell kind="product" id={r.product_id as number} /> },
   { header: 'Qty',       key: 'quantity',    width: '80px',  align: 'right' },
+  { header: 'UOM',       key: 'uom_id',      width: '90px',
+    render: r => <LookupCell kind="uom" id={r.uom_id as number} /> },
   { header: 'Unit Cost', key: 'unit_cost',   width: '90px',  align: 'right',
     render: r => Number(r.unit_cost ?? 0).toFixed(2) },
   { header: 'Total Cost', key: 'total_cost', width: '100px', align: 'right',
@@ -66,8 +71,12 @@ const OUTPUT_COLS: Column<Record<string, unknown>>[] = [
 const RESOURCE_COLS: Column<Record<string, unknown>>[] = [
   { header: '#',    key: 'line_number',  width: '44px', align: 'center' },
   { header: 'Type', key: 'resource_type', width: '90px' },
+  { header: 'Product', key: 'product_id', width: '180px',
+    render: r => <LookupCell kind="product" id={r.product_id as number} /> },
   { header: 'Description', key: 'description' },
   { header: 'Qty',         key: 'quantity',   width: '70px', align: 'right' },
+  { header: 'UOM',         key: 'uom_id',     width: '90px',
+    render: r => <LookupCell kind="uom" id={r.uom_id as number} /> },
   { header: 'Unit Cost',   key: 'unit_cost',  width: '90px', align: 'right',
     render: r => Number(r.unit_cost ?? 0).toFixed(2) },
   { header: 'Total Cost',  key: 'total_cost', width: '100px', align: 'right',
@@ -108,6 +117,9 @@ export function ProductionModal({ isOpen, onClose, onRefresh, doc }: Props) {
   const [actioning,      setActioning]      = useState<string | null>(null)
   const [error,          setError]          = useState('')
   const [showLogs,       setShowLogs]       = useState(false)
+  // Two-tab layout when editing an existing MO: dashboard first, edit form
+  // second. New-MO mode is unchanged.
+  const [modalTab,       setModalTab]       = useState<'dashboard' | 'details'>('dashboard')
 
   useEffect(() => {
     if (!isOpen) return
@@ -115,6 +127,7 @@ export function ProductionModal({ isOpen, onClose, onRefresh, doc }: Props) {
     setShowAddOutput(false)
     setShowAddRes(false)
     setShowLogs(false)
+    setModalTab(isCreate ? 'details' : 'dashboard')
     setOutputs([])
     setResources([])
     if (isCreate) {
@@ -304,7 +317,36 @@ export function ProductionModal({ isOpen, onClose, onRefresh, doc }: Props) {
         </div>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-4">
+        {/* Tabs — only when editing an existing MO */}
+        {!isCreate && (
+          <div className="flex items-center gap-2 border-b border-outline-variant">
+            {(['dashboard', 'details'] as const).map(k => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setModalTab(k)}
+                className={[
+                  'px-3 py-2 -mb-px border-b-2 text-body-sm capitalize transition-colors',
+                  modalTab === k
+                    ? 'border-primary text-primary font-semibold'
+                    : 'border-transparent text-on-surface-variant hover:text-on-surface',
+                ].join(' ')}
+              >
+                {k === 'dashboard' ? 'Dashboard' : 'Details'}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Dashboard tab body */}
+        {!isCreate && modalTab === 'dashboard' && docId && (
+          <MODashboard orderID={docId} />
+        )}
+
+        {/* Details tab body (or create mode) — original form */}
+        {(isCreate || modalTab === 'details') && (
+        <div className="space-y-6">
         {/* Header */}
         <div className="relative">
           {headerLoading && (
@@ -398,6 +440,8 @@ export function ProductionModal({ isOpen, onClose, onRefresh, doc }: Props) {
             </div>
           )}
         </div>
+        </div>
+        )}
       </div>
     </Modal>
   )

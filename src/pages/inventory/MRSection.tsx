@@ -3,9 +3,10 @@ import { Button, Input } from '../../components/ui'
 import { Table, type Column } from '../../components/ui/Table'
 import { StatusBadge } from '../../components/ui/Badge'
 import { apiGet } from '../../lib/api'
+import { LookupCell } from '../../lib/lookups'
 import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from '../procurement/DocDetailModal'
-import { warehouseOptions, departmentOptions, productOptions, uomOptions } from '../master-data/useOptions'
+import { warehouseOptions, departmentOptions, productOptions, uomOptions, manufacturingOrderOptions } from '../master-data/useOptions'
 
 const BASE = '/api/v1/inventory'
 
@@ -18,11 +19,12 @@ const MR_COLS: Column<Record<string, unknown>>[] = [
 ]
 
 const MR_HEADER: FieldDef[] = [
-  { key: 'code',          label: 'Code',        type: 'text',   required: true, placeholder: 'MR-001' },
-  { key: 'needed_date',   label: 'Needed By',   type: 'date',   required: true },
-  { key: 'warehouse_id',  label: 'Warehouse',   type: 'select', required: true, loadOptions: warehouseOptions() },
-  { key: 'department_id', label: 'Department',  type: 'select', loadOptions: departmentOptions() },
-  { key: 'notes',         label: 'Notes',       type: 'textarea', rows: 2, span: true },
+  { key: 'code',          label: 'Code',                type: 'text',   required: true, placeholder: 'MR-001' },
+  { key: 'mo_id',         label: 'Manufacturing Order', type: 'select', loadOptions: manufacturingOrderOptions() },
+  { key: 'needed_date',   label: 'Needed By',           type: 'date',   required: true },
+  { key: 'warehouse_id',  label: 'Warehouse',           type: 'select', required: true, loadOptions: warehouseOptions() },
+  { key: 'department_id', label: 'Department',          type: 'select', loadOptions: departmentOptions() },
+  { key: 'notes',         label: 'Notes',               type: 'textarea', rows: 2, span: true },
 ]
 
 const MR_LINE_FIELDS: FieldDef[] = [
@@ -34,8 +36,11 @@ const MR_LINE_FIELDS: FieldDef[] = [
 
 const MR_LINE_COLS: Column<Record<string, unknown>>[] = [
   { header: '#',            key: 'line_number',  width: '44px', align: 'center' },
-  { header: 'Product ID',   key: 'product_id',   width: '90px' },
+  { header: 'Product',      key: 'product_id',   width: '180px',
+    render: r => <LookupCell kind="product" id={r.product_id as number} /> },
   { header: 'Requested',    key: 'requested_qty', width: '100px', align: 'right' },
+  { header: 'UOM',          key: 'uom_id',       width: '90px',
+    render: r => <LookupCell kind="uom" id={r.uom_id as number} /> },
   { header: 'Issued',       key: 'issued_qty',   width: '80px', align: 'right' },
   { header: 'Notes',        key: 'notes' },
 ]

@@ -3,17 +3,19 @@ import { Button, Input } from '../../components/ui'
 import { Table, type Column } from '../../components/ui/Table'
 import { StatusBadge } from '../../components/ui/Badge'
 import { apiGet } from '../../lib/api'
+import { LookupCell } from '../../lib/lookups'
 import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from './DocDetailModal'
-import { supplierOptions, warehouseOptions, uomOptions, productOptions, purchaseOrderOptions } from '../master-data/useOptions'
+import { supplierOptions, warehouseOptions, uomOptions, productOptions, purchaseOrderOptions, manufacturingOrderOptions } from '../master-data/useOptions'
 
 const BASE = '/api/v1/procurement'
 
 const GRN_TYPES = [
-  { value: 'WITH_PO',           label: 'With Purchase Order' },
-  { value: 'WITHOUT_PO',        label: 'Without PO (Ad-hoc)'  },
-  { value: 'CUSTOMER_RETURN',   label: 'Customer Return'      },
-  { value: 'PRODUCTION_RETURN', label: 'Production Return'    },
+  { value: 'WITH_PO',           label: 'With Purchase Order'     },
+  { value: 'WITHOUT_PO',        label: 'Without PO (Ad-hoc)'      },
+  { value: 'CUSTOMER_RETURN',   label: 'Customer Return'          },
+  { value: 'PRODUCTION_RETURN', label: 'Production Return'        },
+  { value: 'PRODUCTION_OUTPUT', label: 'Production Output (MO)'   },
 ]
 
 const GRN_COLS: Column<Record<string, unknown>>[] = [
@@ -26,13 +28,14 @@ const GRN_COLS: Column<Record<string, unknown>>[] = [
 ]
 
 const GRN_HEADER: FieldDef[] = [
-  { key: 'code',         label: 'Code',           type: 'text',   required: true, placeholder: 'GRN-001' },
-  { key: 'grn_type',     label: 'GRN Type',       type: 'select', required: true, options: GRN_TYPES },
-  { key: 'po_id',        label: 'Purchase Order', type: 'select', loadOptions: purchaseOrderOptions() },
-  { key: 'supplier_id',  label: 'Supplier',       type: 'select', required: true, loadOptions: supplierOptions() },
-  { key: 'receipt_date', label: 'Receipt Date',   type: 'date',   required: true },
-  { key: 'warehouse_id', label: 'Warehouse',      type: 'select', required: true, loadOptions: warehouseOptions() },
-  { key: 'notes',        label: 'Notes',          type: 'textarea', rows: 2, span: true },
+  { key: 'code',         label: 'Code',                type: 'text',   required: true, placeholder: 'GRN-001' },
+  { key: 'grn_type',     label: 'GRN Type',            type: 'select', required: true, options: GRN_TYPES },
+  { key: 'po_id',        label: 'Purchase Order',      type: 'select', loadOptions: purchaseOrderOptions() },
+  { key: 'mo_id',        label: 'Manufacturing Order', type: 'select', loadOptions: manufacturingOrderOptions() },
+  { key: 'supplier_id',  label: 'Supplier',            type: 'select', loadOptions: supplierOptions() },
+  { key: 'receipt_date', label: 'Receipt Date',        type: 'date',   required: true },
+  { key: 'warehouse_id', label: 'Warehouse',           type: 'select', required: true, loadOptions: warehouseOptions() },
+  { key: 'notes',        label: 'Notes',               type: 'textarea', rows: 2, span: true },
 ]
 
 const GRN_LINE_FIELDS: FieldDef[] = [
@@ -45,8 +48,11 @@ const GRN_LINE_FIELDS: FieldDef[] = [
 
 const GRN_LINE_COLS: Column<Record<string, unknown>>[] = [
   { header: '#',          key: 'line_number', width: '44px', align: 'center' },
-  { header: 'Product ID', key: 'product_id',  width: '90px' },
+  { header: 'Product',    key: 'product_id',  width: '180px',
+    render: r => <LookupCell kind="product" id={r.product_id as number} /> },
   { header: 'Quantity',   key: 'quantity',    width: '80px', align: 'right' },
+  { header: 'UOM',        key: 'uom_id',      width: '90px',
+    render: r => <LookupCell kind="uom" id={r.uom_id as number} /> },
   { header: 'Unit Cost',  key: 'unit_cost',   width: '100px', align: 'right',
     render: r => Number(r.unit_cost ?? 0).toFixed(2) },
   { header: 'Total Cost', key: 'total_cost',  width: '110px', align: 'right',
