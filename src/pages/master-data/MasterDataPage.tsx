@@ -9,6 +9,7 @@ import { HRSection }                    from './sections/HRSection'
 import { InventorySection }             from './sections/InventorySection'
 import { MaterialCategoriesSection }   from './sections/MaterialCategoriesSection'
 import { MaterialsSection }            from './sections/MaterialsSection'
+import { DocumentTypesSection }        from './sections/DocumentTypesSection'
 
 const SECTIONS = [
   { id: 'organization',        label: 'Organization',         icon: 'domain',                  subtitle: 'Departments, fiscal years, document sequences' },
@@ -20,6 +21,7 @@ const SECTIONS = [
   { id: 'inventory',           label: 'Inventory',            icon: 'warehouse',               subtitle: 'Warehouses, storage locations' },
   { id: 'material-categories', label: 'Material Categories',  icon: 'folder_open',             subtitle: 'Hierarchical material category tree' },
   { id: 'materials',           label: 'Materials',            icon: 'layers',                  subtitle: 'Raw materials, semi-finished goods, services' },
+  { id: 'document-types',      label: 'Document Types',       icon: 'category',                subtitle: 'Per-document classifications with custom picker fields' },
 ]
 
 export function MasterDataPage() {
@@ -49,6 +51,7 @@ export function MasterDataPage() {
         {active === 'inventory'           && <InventorySection />}
         {active === 'material-categories' && <MaterialCategoriesSection />}
         {active === 'materials'           && <MaterialsSection />}
+        {active === 'document-types'      && <DocumentTypesSection />}
       </div>
     </div>
   )

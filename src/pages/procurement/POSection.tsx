@@ -8,13 +8,17 @@ import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from './DocDetailModal'
 import {
   currencyOptions, paymentTermOptions, warehouseOptions,
-  uomOptions, productOptions, taxCodeOptions, supplierOptions,
+  uomOptions, productOptions, taxCodeOptions, supplierOptions, documentTypeOptions,
 } from '../master-data/useOptions'
 
 const BASE = '/api/v1/procurement'
 
 const PO_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Code',          key: 'code',          width: '130px' },
+  { header: 'Supplier', key: 'supplier_id', width: '200px',
+    render: r => <LookupCell kind="supplier" id={r.supplier_id as number} /> },
+  { header: 'Type',          key: 'document_type_id', width: '200px',
+    render: r => <LookupCell kind="documentType" id={r.document_type_id as number} /> },
   { header: 'Order Date',    key: 'order_date',    width: '110px' },
   { header: 'Expected',      key: 'expected_date', width: '110px' },
   { header: 'Total',         key: 'total_amount',  width: '110px', align: 'right',
@@ -24,7 +28,8 @@ const PO_COLS: Column<Record<string, unknown>>[] = [
 ]
 
 const PO_HEADER: FieldDef[] = [
-  { key: 'code',            label: 'Code',           type: 'text',   required: true, placeholder: 'PO-001' },
+  { key: 'code',             label: 'Code',          type: 'text',   required: true, placeholder: 'PO-001' },
+  { key: 'document_type_id', label: 'Type',          type: 'select', loadOptions: documentTypeOptions('PO') },
   { key: 'supplier_id',     label: 'Supplier',       type: 'select', required: true, loadOptions: supplierOptions() },
   { key: 'order_date',      label: 'Order Date',     type: 'date',   required: true },
   { key: 'expected_date',   label: 'Expected Date',  type: 'date' },
@@ -119,6 +124,7 @@ export function POSection() {
           endpoint={`${BASE}/purchase-orders`}
           doc={modalDoc}
           entityLabel="Purchase Order"
+          docKind="PO"
           listSubFields={['order_date', 'expected_date']}
           headerFields={PO_HEADER}
           lineFields={PO_LINE_FIELDS}

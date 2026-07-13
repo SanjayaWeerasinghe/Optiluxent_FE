@@ -38,6 +38,7 @@ export type LookupKind =
   | 'productionOrder'
   | 'purchaseOrder'
   | 'salesOrder'
+  | 'documentType'
 
 // Endpoint + label formatter per kind. When a shape needs a different label
 // (e.g. banks) add a bespoke entry here and it flows through everything.
@@ -56,6 +57,7 @@ const SOURCES: Record<LookupKind, { url: string; label: (r: Record<string, unkno
   taxCode:          { url: '/api/v1/masterdata/financial/tax-codes',                label: r => join(r.code, r.name) },
   coa:              { url: '/api/v1/masterdata/financial/chart-of-accounts',        label: r => join(r.code, r.name) },
   bank:             { url: '/api/v1/masterdata/financial/banks',                    label: r => r.branch_name ? `${r.name} (${r.branch_name})` : String(r.name ?? r.id) },
+  documentType:     { url: '/api/v1/masterdata/document-types',                     label: r => join(r.code, r.name) },
   category:         { url: '/api/v1/masterdata/products/categories',                label: r => join(r.code, r.name) },
   materialCategory: { url: '/api/v1/masterdata/material-categories',                label: r => join(r.code, r.name) },
   employee:         { url: '/api/v1/masterdata/hr/employees',                       label: r => join(r.code, r.name ?? [r.first_name, r.last_name].filter(Boolean).join(' ')) },
@@ -90,8 +92,10 @@ const Ctx = createContext<LookupsCtx | null>(null)
 // Kinds we prefetch immediately when the provider mounts. Adds ~9 small
 // GETs to the initial load, all in parallel — well under a second total.
 const EAGER_KINDS: LookupKind[] = [
-  'product', 'material', 'warehouse', 'uom', 'party',
+  'product', 'material', 'warehouse', 'uom',
+  'party', 'supplier', 'customer',
   'workCenter', 'department', 'taxCode', 'category',
+  'documentType',
 ]
 
 export function LookupsProvider({ children }: { children: ReactNode }) {
@@ -133,10 +137,25 @@ export function LookupsProvider({ children }: { children: ReactNode }) {
   function format(kind: LookupKind, id: number | null | undefined): string {
     if (id === null || id === undefined || id === 0) return '—'
     if (!store[kind]) {
-      loadKind(kind) // lazy-load on first miss
+      // Kick off the lazy-load outside the render pass — calling setState
+      // during render breaks React's rules and produces a warning that also
+      // trips CI. This is best-effort: the next render will show the label.
+      queueMicrotask(() => loadKind(kind))
+      // Fall through to the generic party cache for supplier/customer misses
+      // so a doc whose supplier_id points at a party of the "wrong" type still
+      // shows a readable name.
+      if ((kind === 'supplier' || kind === 'customer') && store.party) {
+        return store.party.get(Number(id)) ?? `#${id}`
+      }
       return `#${id}`
     }
-    return store[kind]!.get(Number(id)) ?? `#${id}`
+    const hit = store[kind]!.get(Number(id))
+    if (hit) return hit
+    // Same fallback for a cache-loaded-but-filtered-out miss.
+    if ((kind === 'supplier' || kind === 'customer') && store.party) {
+      return store.party.get(Number(id)) ?? `#${id}`
+    }
+    return `#${id}`
   }
 
   return (

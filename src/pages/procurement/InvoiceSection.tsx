@@ -8,13 +8,17 @@ import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from './DocDetailModal'
 import {
   supplierOptions, currencyOptions, paymentTermOptions,
-  uomOptions, productOptions, taxCodeOptions, purchaseOrderOptions,
+  uomOptions, productOptions, taxCodeOptions, purchaseOrderOptions, documentTypeOptions,
 } from '../master-data/useOptions'
 
 const BASE = '/api/v1/procurement'
 
 const INV_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Code',        key: 'code',                width: '130px' },
+  { header: 'Supplier', key: 'supplier_id', width: '200px',
+    render: r => <LookupCell kind="supplier" id={r.supplier_id as number} /> },
+  { header: 'Type',        key: 'document_type_id', width: '200px',
+    render: r => <LookupCell kind="documentType" id={r.document_type_id as number} /> },
   { header: 'Supplier Inv.', key: 'supplier_invoice_no', width: '130px' },
   { header: 'Invoice Date', key: 'invoice_date',       width: '110px' },
   { header: 'Due Date',    key: 'due_date',            width: '110px' },
@@ -26,6 +30,7 @@ const INV_COLS: Column<Record<string, unknown>>[] = [
 
 const INV_HEADER: FieldDef[] = [
   { key: 'code',                  label: 'Code',                  type: 'text',   required: true, placeholder: 'PINV-001' },
+  { key: 'document_type_id',      label: 'Type',                  type: 'select', loadOptions: documentTypeOptions('PI') },
   { key: 'supplier_id',           label: 'Supplier',              type: 'select', required: true, loadOptions: supplierOptions() },
   { key: 'po_id',                 label: 'Purchase Order',        type: 'select', required: true, loadOptions: purchaseOrderOptions() },
   { key: 'invoice_date',          label: 'Invoice Date',          type: 'date',   required: true },
@@ -128,6 +133,7 @@ export function InvoiceSection() {
           endpoint={`${BASE}/purchase-invoices`}
           doc={modalDoc}
           entityLabel="Purchase Invoice"
+          docKind="PI"
           listSubFields={['invoice_date', 'due_date']}
           headerFields={INV_HEADER}
           lineFields={INV_LINE_FIELDS}

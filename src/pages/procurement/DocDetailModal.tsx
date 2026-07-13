@@ -8,6 +8,7 @@ import { apiGet, apiPost, apiPut, apiDelete } from '../../lib/api'
 import { FieldControl, buildForm, type FieldDef } from '../master-data/CrudSection'
 import { AuditLogPanel } from './AuditLogPanel'
 import { RecordListPanel } from './RecordListPanel'
+import { DocumentTypeFields, saveDocumentTypeValues, type DocumentFieldValues } from '../../components/documents/DocumentTypeFields'
 
 export interface WorkflowAction {
   label:           string
@@ -32,6 +33,11 @@ interface Props {
   workflowActions?:    WorkflowAction[]
   idKey?:              string
   listSubFields?:      string[]
+  /** Enables the DocumentType-driven custom-field block below the header.
+   * Set to the entity's model key (e.g. 'GRN', 'MR', 'GI'). When set, the
+   * modal renders fields for whatever DocumentType is picked, and persists
+   * their values via /documents/:kind/:id/fields on save. */
+  docKind?:            string
 }
 
 export function DocDetailModal({
@@ -45,6 +51,7 @@ export function DocDetailModal({
   workflowActions = [],
   idKey = 'id',
   listSubFields,
+  docKind,
 }: Props) {
   // navDoc: record the user navigated to via the list panel (overrides doc prop)
   const [navDoc, setNavDoc] = useState<Record<string, unknown> | null>(null)
@@ -65,6 +72,8 @@ export function DocDetailModal({
   const [error,         setError]         = useState('')
   const [showLogs,      setShowLogs]      = useState(false)
   const [showList,      setShowList]      = useState(true)
+  // Values for the DocumentType-driven picker slots. Only meaningful when docKind is set.
+  const [dtValues,      setDtValues]      = useState<DocumentFieldValues>({})
 
   // Derive audit resource from endpoint: /api/v1/<module>/... → <module>
   const auditResource = endpoint.split('/').filter(p => p && p !== 'api' && p !== 'v1')[0] ?? ''
@@ -78,6 +87,7 @@ export function DocDetailModal({
     setShowLogs(false)
     setShowList(true)
     setLines([])
+    setDtValues({})
     if (!doc) {
       setForm(buildForm(headerFields.filter(f => !f.editOnly)))
       setAddForm(buildForm(lineFields))
@@ -166,6 +176,13 @@ export function DocDetailModal({
           Object.entries(lineBody).filter(([, v]) => v !== '')
         )
         await apiPost(`${endpoint}/${id}/${lineEndpointSuffix}`, cleanedLine)
+      }
+
+      // Persist any DocumentType-driven picker values in one batch.
+      if (docKind && Object.keys(dtValues).length > 0) {
+        try {
+          await saveDocumentTypeValues(docKind, id, dtValues)
+        } catch { /* non-fatal — values can be re-saved later */ }
       }
 
       onClose()
@@ -334,6 +351,17 @@ export function DocDetailModal({
                 />
               </div>
             ))}
+            {/* Type-driven picker slots appear inline in the same grid so the
+                form reads as one continuous set of fields. */}
+            {docKind && (
+              <DocumentTypeFields
+                docKind={docKind}
+                docId={docId}
+                typeId={form.document_type_id ? Number(form.document_type_id) : undefined}
+                values={dtValues}
+                onChange={setDtValues}
+              />
+            )}
           </div>
         </div>
 

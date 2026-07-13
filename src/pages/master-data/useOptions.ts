@@ -117,6 +117,62 @@ export function manufacturingOrderOptions(): () => Promise<SelectOption[]> {
       .catch(() => [])
 }
 
+// Per-document code-only loaders. Fed to DocumentType fields whose kind ==
+// one of these — the picker becomes a dropdown of existing docs.
+const simpleCodeLoader = (url: string) => () =>
+  apiGet<{ id: number; code: string }[]>(url)
+    .then(rows => rows.map(r => ({ value: r.id, label: r.code })))
+    .catch(() => [])
+
+export const purchaseRequestOptions   = () => simpleCodeLoader('/api/v1/procurement/purchase-requests')
+export const grnOptions                = () => simpleCodeLoader('/api/v1/procurement/goods-receipts')
+export const purchaseInvoiceOptions   = () => simpleCodeLoader('/api/v1/procurement/purchase-invoices')
+export const materialRequestOptions   = () => simpleCodeLoader('/api/v1/inventory/material-requests')
+export const goodsTransferOptions     = () => simpleCodeLoader('/api/v1/inventory/transfers')
+export const goodsIssueOptions        = () => simpleCodeLoader('/api/v1/inventory/issues')
+export const stockAdjustmentOptions   = () => simpleCodeLoader('/api/v1/inventory/adjustments')
+export const qualityCheckOptions      = () => simpleCodeLoader('/api/v1/inventory/quality-checks')
+export const deliveryOrderOptions     = () => simpleCodeLoader('/api/v1/sales/deliveries')
+export const salesInvoiceOptions      = () => simpleCodeLoader('/api/v1/sales/invoices')
+export const salesQuotationOptions    = () => simpleCodeLoader('/api/v1/sales/quotations')
+
+// Loader dispatch — given a DocumentTypeField.kind, return the right loader.
+export function loaderForFieldKind(kind: string): () => Promise<SelectOption[]> {
+  switch (kind) {
+    case 'PR':        return purchaseRequestOptions()
+    case 'PO':        return purchaseOrderOptions()
+    case 'PI':        return purchaseInvoiceOptions()
+    case 'GRN':       return grnOptions()
+    case 'MR':        return materialRequestOptions()
+    case 'GT':        return goodsTransferOptions()
+    case 'GI':        return goodsIssueOptions()
+    case 'SA':        return stockAdjustmentOptions()
+    case 'QC':        return qualityCheckOptions()
+    case 'SQ':        return salesQuotationOptions()
+    case 'SO':        return salesOrderOptions()
+    case 'DO':        return deliveryOrderOptions()
+    case 'SI':         return salesInvoiceOptions()
+    case 'MO':         return manufacturingOrderOptions()
+    case 'Customer':   return customerOptions()
+    case 'Supplier':   return supplierOptions()
+    case 'Product':    return productOptions()
+    case 'Warehouse':  return warehouseOptions()
+    case 'Department': return departmentOptions()
+    default:           return () => Promise.resolve([])
+  }
+}
+
+export function documentTypeOptions(model: string): () => Promise<SelectOption[]> {
+  return () =>
+    apiGet<{ id: number; code: string; name: string; is_active: boolean }[]>(`/api/v1/masterdata/document-types?model=${encodeURIComponent(model)}`)
+      .then(rows =>
+        rows
+          .filter(r => r.is_active)
+          .map(r => ({ value: r.id, label: `${r.code} – ${r.name}` }))
+      )
+      .catch(() => [])
+}
+
 export function customerOptions(): () => Promise<SelectOption[]> {
   return () =>
     apiGet<{ id: number; code: string; name: string; party_type: string }[]>('/api/v1/masterdata/contacts/parties')

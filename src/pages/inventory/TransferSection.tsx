@@ -6,12 +6,18 @@ import { apiGet } from '../../lib/api'
 import { LookupCell } from '../../lib/lookups'
 import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from '../procurement/DocDetailModal'
-import { warehouseOptions, productOptions, uomOptions } from '../master-data/useOptions'
+import { warehouseOptions, productOptions, uomOptions, documentTypeOptions, manufacturingOrderOptions } from '../master-data/useOptions'
 
 const BASE = '/api/v1/inventory'
 
 const GT_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Code',          key: 'code',          width: '130px' },
+  { header: 'From', key: 'from_warehouse_id', width: '160px',
+    render: r => <LookupCell kind="warehouse" id={r.from_warehouse_id as number} /> },
+  { header: 'To',   key: 'to_warehouse_id',   width: '160px',
+    render: r => <LookupCell kind="warehouse" id={r.to_warehouse_id as number} /> },
+  { header: 'Type',          key: 'document_type_id', width: '200px',
+    render: r => <LookupCell kind="documentType" id={r.document_type_id as number} /> },
   { header: 'Transfer Date', key: 'transfer_date', width: '120px' },
   { header: 'Status', key: 'status', width: '130px',
     render: r => <StatusBadge status={String(r.status ?? '')} /> },
@@ -20,8 +26,10 @@ const GT_COLS: Column<Record<string, unknown>>[] = [
 
 const GT_HEADER: FieldDef[] = [
   { key: 'code',              label: 'Code',           type: 'text',   required: true, placeholder: 'GT-001' },
+  { key: 'document_type_id',  label: 'Type',           type: 'select', loadOptions: documentTypeOptions('GT') },
   { key: 'from_warehouse_id', label: 'From Warehouse', type: 'select', required: true, loadOptions: warehouseOptions() },
   { key: 'to_warehouse_id',   label: 'To Warehouse',   type: 'select', required: true, loadOptions: warehouseOptions() },
+  { key: 'mo_id',             label: 'Manufacturing Order', type: 'select', loadOptions: manufacturingOrderOptions() },
   { key: 'transfer_date',     label: 'Transfer Date',  type: 'date',   required: true },
   { key: 'notes',             label: 'Notes',          type: 'textarea', rows: 2, span: true },
 ]
@@ -91,6 +99,7 @@ export function TransferSection() {
           isOpen onClose={() => setModalDoc(undefined)} onRefresh={load}
           endpoint={`${BASE}/transfers`}
           doc={modalDoc} entityLabel="Goods Transfer"
+          docKind="GT"
           listSubFields={['transfer_date']}
           headerFields={GT_HEADER} lineFields={GT_LINE_FIELDS} lineColumns={GT_LINE_COLS}
           workflowActions={GT_WORKFLOW}

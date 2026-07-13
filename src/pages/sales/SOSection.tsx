@@ -8,13 +8,19 @@ import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from '../procurement/DocDetailModal'
 import {
   customerOptions, currencyOptions, paymentTermOptions,
-  warehouseOptions, uomOptions, productOptions, taxCodeOptions,
+  warehouseOptions, uomOptions, productOptions, taxCodeOptions, documentTypeOptions,
 } from '../master-data/useOptions'
 
 const BASE = '/api/v1/sales'
 
 const SO_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Code',       key: 'code',                   width: '130px' },
+  { header: 'Type',       key: 'document_type_id', width: '200px',
+    render: r => <LookupCell kind="documentType" id={r.document_type_id as number} /> },
+  { header: 'Customer',  key: 'customer_id',  width: '200px',
+    render: r => <LookupCell kind="customer" id={r.customer_id as number} /> },
+  { header: 'Warehouse', key: 'warehouse_id', width: '160px',
+    render: r => <LookupCell kind="warehouse" id={r.warehouse_id as number} /> },
   { header: 'Order Date', key: 'order_date',             width: '110px' },
   { header: 'Expected',   key: 'expected_delivery_date', width: '110px' },
   { header: 'Total',      key: 'total_amount',           width: '110px', align: 'right',
@@ -25,6 +31,7 @@ const SO_COLS: Column<Record<string, unknown>>[] = [
 
 const SO_HEADER: FieldDef[] = [
   { key: 'code',                   label: 'Code',              type: 'text',     required: true, placeholder: 'SO-001' },
+  { key: 'document_type_id',       label: 'Type',              type: 'select',   loadOptions: documentTypeOptions('SO') },
   { key: 'customer_id',            label: 'Customer',          type: 'select',   required: true, loadOptions: customerOptions() },
   { key: 'order_date',             label: 'Order Date',        type: 'date',     required: true },
   { key: 'expected_delivery_date', label: 'Expected Delivery', type: 'date' },
@@ -120,6 +127,7 @@ export function SOSection() {
           endpoint={`${BASE}/sales-orders`}
           doc={modalDoc}
           entityLabel="Sales Order"
+          docKind="SO"
           listSubFields={['order_date', 'expected_delivery_date']}
           headerFields={SO_HEADER}
           lineFields={SO_LINE_FIELDS}

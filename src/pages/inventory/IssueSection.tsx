@@ -6,24 +6,17 @@ import { apiGet } from '../../lib/api'
 import { LookupCell } from '../../lib/lookups'
 import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from '../procurement/DocDetailModal'
-import { warehouseOptions, productOptions, uomOptions, manufacturingOrderOptions } from '../master-data/useOptions'
+import { warehouseOptions, productOptions, uomOptions, manufacturingOrderOptions, documentTypeOptions } from '../master-data/useOptions'
 
 const BASE = '/api/v1/inventory'
 
-const ISSUE_REASONS = [
-  { value: 'PRODUCTION',   label: 'Production' },
-  { value: 'SALE',         label: 'Sale' },
-  { value: 'EXPENSE',      label: 'Expense' },
-  { value: 'DAMAGE',       label: 'Damage' },
-  { value: 'ADJUSTMENT',   label: 'Adjustment' },
-  { value: 'QC_REJECTION', label: 'QC Rejection' },
-  { value: 'OTHER',        label: 'Other' },
-]
-
 const GI_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Code',        key: 'code',         width: '130px' },
+  { header: 'Type',        key: 'document_type_id', width: '200px',
+    render: r => <LookupCell kind="documentType" id={r.document_type_id as number} /> },
+  { header: 'Warehouse', key: 'warehouse_id', width: '160px',
+    render: r => <LookupCell kind="warehouse" id={r.warehouse_id as number} /> },
   { header: 'Issue Date',  key: 'issue_date',   width: '120px' },
-  { header: 'Reason',      key: 'issue_reason', width: '120px' },
   { header: 'Status', key: 'status', width: '120px',
     render: r => <StatusBadge status={String(r.status ?? '')} /> },
   { header: 'Notes', key: 'notes' },
@@ -35,10 +28,10 @@ const REF_TYPES = [
 ]
 
 const GI_HEADER: FieldDef[] = [
-  { key: 'code',           label: 'Code',           type: 'text',   required: true, placeholder: 'GI-001' },
+  { key: 'code',             label: 'Code',           type: 'text',   required: true, placeholder: 'GI-001' },
+  { key: 'document_type_id', label: 'Type',           type: 'select', loadOptions: documentTypeOptions('GI') },
   { key: 'issue_date',     label: 'Issue Date',     type: 'date',   required: true },
   { key: 'warehouse_id',   label: 'Warehouse',      type: 'select', required: true, loadOptions: warehouseOptions() },
-  { key: 'issue_reason',   label: 'Issue Reason',   type: 'select', required: true, options: ISSUE_REASONS },
   { key: 'reference_type', label: 'Reference Type', type: 'select', options: REF_TYPES },
   // reference_id is a plain MO picker; the user only picks one when reference_type = PRODUCTION_ORDER
   { key: 'reference_id',   label: 'Reference (MO)', type: 'select', loadOptions: manufacturingOrderOptions() },
@@ -91,7 +84,7 @@ export function IssueSection() {
     const q = search.toLowerCase()
     return data.filter(r =>
       String(r.code ?? '').toLowerCase().includes(q) ||
-      String(r.issue_reason ?? '').toLowerCase().includes(q)
+      String(r.notes ?? '').toLowerCase().includes(q)
     )
   }, [data, search])
 
@@ -114,7 +107,8 @@ export function IssueSection() {
           isOpen onClose={() => setModalDoc(undefined)} onRefresh={load}
           endpoint={`${BASE}/issues`}
           doc={modalDoc} entityLabel="Goods Issue"
-          listSubFields={['issue_date', 'issue_reason']}
+          docKind="GI"
+          listSubFields={['issue_date']}
           headerFields={GI_HEADER} lineFields={GI_LINE_FIELDS} lineColumns={GI_LINE_COLS}
           workflowActions={GI_WORKFLOW}
         />

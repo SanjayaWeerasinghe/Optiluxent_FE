@@ -8,13 +8,17 @@ import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from '../procurement/DocDetailModal'
 import {
   customerOptions, currencyOptions, paymentTermOptions,
-  uomOptions, productOptions, taxCodeOptions, salesOrderOptions,
+  uomOptions, productOptions, taxCodeOptions, salesOrderOptions, documentTypeOptions,
 } from '../master-data/useOptions'
 
 const BASE = '/api/v1/sales'
 
 const SI_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Code',         key: 'code',             width: '130px' },
+  { header: 'Type',         key: 'document_type_id', width: '200px',
+    render: r => <LookupCell kind="documentType" id={r.document_type_id as number} /> },
+  { header: 'Customer', key: 'customer_id', width: '200px',
+    render: r => <LookupCell kind="customer" id={r.customer_id as number} /> },
   { header: 'Customer PO',  key: 'customer_po_number', width: '120px' },
   { header: 'Invoice Date', key: 'invoice_date',     width: '110px' },
   { header: 'Due Date',     key: 'due_date',         width: '110px' },
@@ -28,6 +32,7 @@ const SI_COLS: Column<Record<string, unknown>>[] = [
 
 const SI_HEADER: FieldDef[] = [
   { key: 'code',               label: 'Code',             type: 'text',     required: true, placeholder: 'SINV-001' },
+  { key: 'document_type_id',   label: 'Type',             type: 'select',   loadOptions: documentTypeOptions('SI') },
   { key: 'customer_id',        label: 'Customer',         type: 'select',   required: true, loadOptions: customerOptions() },
   { key: 'so_id',              label: 'Sales Order',      type: 'select',   required: true, loadOptions: salesOrderOptions() },
   { key: 'invoice_date',       label: 'Invoice Date',     type: 'date',     required: true },
@@ -129,6 +134,7 @@ export function SalesInvoiceSection() {
           endpoint={`${BASE}/invoices`}
           doc={modalDoc}
           entityLabel="Sales Invoice"
+          docKind="SI"
           listSubFields={['invoice_date', 'due_date']}
           headerFields={SI_HEADER}
           lineFields={SI_LINE_FIELDS}

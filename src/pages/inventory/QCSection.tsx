@@ -6,7 +6,7 @@ import { apiGet } from '../../lib/api'
 import { LookupCell } from '../../lib/lookups'
 import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from '../procurement/DocDetailModal'
-import { warehouseOptions, productOptions } from '../master-data/useOptions'
+import { warehouseOptions, productOptions, documentTypeOptions } from '../master-data/useOptions'
 
 const BASE = '/api/v1/inventory'
 
@@ -17,6 +17,10 @@ const QC_RESULTS = [
 
 const QC_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Code',           key: 'code',           width: '130px' },
+  { header: 'Type',           key: 'document_type_id', width: '200px',
+    render: r => <LookupCell kind="documentType" id={r.document_type_id as number} /> },
+  { header: 'Warehouse', key: 'warehouse_id', width: '160px',
+    render: r => <LookupCell kind="warehouse" id={r.warehouse_id as number} /> },
   { header: 'Check Date',     key: 'check_date',     width: '120px' },
   { header: 'Reference Type', key: 'reference_type', width: '120px' },
   { header: 'Status', key: 'status', width: '130px',
@@ -25,7 +29,8 @@ const QC_COLS: Column<Record<string, unknown>>[] = [
 ]
 
 const QC_HEADER: FieldDef[] = [
-  { key: 'code',           label: 'Code',           type: 'text',   required: true, placeholder: 'QC-001' },
+  { key: 'code',             label: 'Code',           type: 'text',   required: true, placeholder: 'QC-001' },
+  { key: 'document_type_id', label: 'Type',           type: 'select', loadOptions: documentTypeOptions('QC') },
   { key: 'check_date',     label: 'Check Date',     type: 'date',   required: true },
   { key: 'warehouse_id',   label: 'Warehouse',      type: 'select', loadOptions: warehouseOptions() },
   { key: 'reference_type', label: 'Reference Type', type: 'text',   placeholder: 'GRN' },
@@ -107,6 +112,7 @@ export function QCSection() {
           isOpen onClose={() => setModalDoc(undefined)} onRefresh={load}
           endpoint={`${BASE}/quality-checks`}
           doc={modalDoc} entityLabel="Quality Check"
+          docKind="QC"
           listSubFields={['check_date', 'reference_type']}
           headerFields={QC_HEADER} lineFields={QC_LINE_FIELDS} lineColumns={QC_LINE_COLS}
           workflowActions={QC_WORKFLOW}

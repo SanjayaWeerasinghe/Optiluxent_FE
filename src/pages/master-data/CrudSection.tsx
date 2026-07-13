@@ -39,7 +39,15 @@ export function buildForm(fields: FieldDef[], data?: Record<string, unknown>): R
   const form: Record<string, unknown> = {}
   for (const f of fields) {
     if (data !== undefined) {
-      form[f.key] = data[f.key] ?? (f.type === 'toggle' ? false : '')
+      let raw = data[f.key]
+      // Date fields — the API returns full RFC3339 datetimes for postgres
+      // DATE columns (e.g. "2026-07-01T00:00:00Z"). <input type="date">
+      // needs "yyyy-MM-dd" or it silently refuses to render the value,
+      // producing an empty-looking populated field. Truncate here.
+      if (f.type === 'date' && typeof raw === 'string' && raw.length >= 10 && raw.includes('T')) {
+        raw = raw.slice(0, 10)
+      }
+      form[f.key] = raw ?? (f.type === 'toggle' ? false : '')
     } else {
       form[f.key] = f.type === 'toggle' ? true : ''
     }

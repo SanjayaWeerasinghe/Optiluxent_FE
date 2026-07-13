@@ -7,20 +7,27 @@ import { LookupCell } from '../../lib/lookups'
 import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from '../procurement/DocDetailModal'
 import {
-  customerOptions, warehouseOptions, uomOptions, productOptions, salesOrderOptions,
+  customerOptions, warehouseOptions, uomOptions, productOptions, salesOrderOptions, documentTypeOptions,
 } from '../master-data/useOptions'
 
 const BASE = '/api/v1/sales'
 
 const DO_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Code',          key: 'code',          width: '130px' },
+  { header: 'Type',          key: 'document_type_id', width: '200px',
+    render: r => <LookupCell kind="documentType" id={r.document_type_id as number} /> },
+  { header: 'Customer',  key: 'customer_id',  width: '200px',
+    render: r => <LookupCell kind="customer" id={r.customer_id as number} /> },
+  { header: 'Warehouse', key: 'warehouse_id', width: '160px',
+    render: r => <LookupCell kind="warehouse" id={r.warehouse_id as number} /> },
   { header: 'Delivery Date', key: 'delivery_date', width: '120px' },
   { header: 'Status', key: 'status', width: '120px',
     render: r => <StatusBadge status={String(r.status ?? '')} /> },
 ]
 
 const DO_HEADER: FieldDef[] = [
-  { key: 'code',          label: 'Code',          type: 'text',     required: true, placeholder: 'DO-001' },
+  { key: 'code',             label: 'Code',          type: 'text',     required: true, placeholder: 'DO-001' },
+  { key: 'document_type_id', label: 'Type',          type: 'select',   loadOptions: documentTypeOptions('DO') },
   { key: 'so_id',         label: 'Sales Order',   type: 'select',   loadOptions: salesOrderOptions() },
   { key: 'customer_id',   label: 'Customer',      type: 'select',   required: true, loadOptions: customerOptions() },
   { key: 'delivery_date', label: 'Delivery Date', type: 'date',     required: true },
@@ -107,6 +114,7 @@ export function DeliverySection() {
           endpoint={`${BASE}/deliveries`}
           doc={modalDoc}
           entityLabel="Delivery Order"
+          docKind="DO"
           listSubFields={['delivery_date']}
           headerFields={DO_HEADER}
           lineFields={DO_LINE_FIELDS}

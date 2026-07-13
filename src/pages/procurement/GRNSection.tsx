@@ -6,36 +6,33 @@ import { apiGet } from '../../lib/api'
 import { LookupCell } from '../../lib/lookups'
 import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from './DocDetailModal'
-import { supplierOptions, warehouseOptions, uomOptions, productOptions, purchaseOrderOptions, manufacturingOrderOptions } from '../master-data/useOptions'
+import { supplierOptions, warehouseOptions, uomOptions, productOptions, purchaseOrderOptions, manufacturingOrderOptions, documentTypeOptions } from '../master-data/useOptions'
 
 const BASE = '/api/v1/procurement'
 
-const GRN_TYPES = [
-  { value: 'WITH_PO',           label: 'With Purchase Order'     },
-  { value: 'WITHOUT_PO',        label: 'Without PO (Ad-hoc)'      },
-  { value: 'CUSTOMER_RETURN',   label: 'Customer Return'          },
-  { value: 'PRODUCTION_RETURN', label: 'Production Return'        },
-  { value: 'PRODUCTION_OUTPUT', label: 'Production Output (MO)'   },
-]
-
 const GRN_COLS: Column<Record<string, unknown>>[] = [
-  { header: 'Code',         key: 'code',         width: '130px' },
-  { header: 'Type',         key: 'grn_type',     width: '160px' },
-  { header: 'Receipt Date', key: 'receipt_date', width: '120px' },
+  { header: 'Code',         key: 'code',              width: '130px' },
+  { header: 'Type',         key: 'document_type_id',  width: '200px',
+    render: r => <LookupCell kind="documentType" id={r.document_type_id as number} /> },
+  { header: 'Supplier',  key: 'supplier_id',  width: '200px',
+    render: r => <LookupCell kind="supplier" id={r.supplier_id as number} /> },
+  { header: 'Warehouse', key: 'warehouse_id', width: '160px',
+    render: r => <LookupCell kind="warehouse" id={r.warehouse_id as number} /> },
+  { header: 'Receipt Date', key: 'receipt_date',      width: '120px' },
   { header: 'Status', key: 'status', width: '120px',
     render: r => <StatusBadge status={String(r.status ?? '')} /> },
   { header: 'Notes', key: 'notes' },
 ]
 
 const GRN_HEADER: FieldDef[] = [
-  { key: 'code',         label: 'Code',                type: 'text',   required: true, placeholder: 'GRN-001' },
-  { key: 'grn_type',     label: 'GRN Type',            type: 'select', required: true, options: GRN_TYPES },
-  { key: 'po_id',        label: 'Purchase Order',      type: 'select', loadOptions: purchaseOrderOptions() },
-  { key: 'mo_id',        label: 'Manufacturing Order', type: 'select', loadOptions: manufacturingOrderOptions() },
-  { key: 'supplier_id',  label: 'Supplier',            type: 'select', loadOptions: supplierOptions() },
-  { key: 'receipt_date', label: 'Receipt Date',        type: 'date',   required: true },
-  { key: 'warehouse_id', label: 'Warehouse',           type: 'select', required: true, loadOptions: warehouseOptions() },
-  { key: 'notes',        label: 'Notes',               type: 'textarea', rows: 2, span: true },
+  { key: 'code',             label: 'Code',                type: 'text',   required: true, placeholder: 'GRN-001' },
+  { key: 'document_type_id', label: 'GRN Type',            type: 'select', required: true, loadOptions: documentTypeOptions('GRN') },
+  { key: 'po_id',            label: 'Purchase Order',      type: 'select', loadOptions: purchaseOrderOptions() },
+  { key: 'mo_id',            label: 'Manufacturing Order', type: 'select', loadOptions: manufacturingOrderOptions() },
+  { key: 'supplier_id',      label: 'Supplier',            type: 'select', loadOptions: supplierOptions() },
+  { key: 'receipt_date',     label: 'Receipt Date',        type: 'date',   required: true },
+  { key: 'warehouse_id',     label: 'Warehouse',           type: 'select', required: true, loadOptions: warehouseOptions() },
+  { key: 'notes',            label: 'Notes',               type: 'textarea', rows: 2, span: true },
 ]
 
 const GRN_LINE_FIELDS: FieldDef[] = [
@@ -117,6 +114,7 @@ export function GRNSection() {
           endpoint={`${BASE}/goods-receipts`}
           doc={modalDoc}
           entityLabel="Goods Receipt"
+          docKind="GRN"
           listSubFields={['receipt_date']}
           headerFields={GRN_HEADER}
           lineFields={GRN_LINE_FIELDS}

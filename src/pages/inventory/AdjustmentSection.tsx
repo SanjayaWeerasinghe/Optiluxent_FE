@@ -6,33 +6,27 @@ import { apiGet } from '../../lib/api'
 import { LookupCell } from '../../lib/lookups'
 import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from '../procurement/DocDetailModal'
-import { warehouseOptions, productOptions, uomOptions } from '../master-data/useOptions'
+import { warehouseOptions, productOptions, uomOptions, documentTypeOptions } from '../master-data/useOptions'
 
 const BASE = '/api/v1/inventory'
 
-const ADJUST_REASONS = [
-  { value: 'STOCKTAKE',  label: 'Stocktake' },
-  { value: 'DAMAGE',     label: 'Damage' },
-  { value: 'EXPIRY',     label: 'Expiry' },
-  { value: 'WRITE_OFF',  label: 'Write-Off' },
-  { value: 'CORRECTION', label: 'Correction' },
-  { value: 'OTHER',      label: 'Other' },
-]
-
 const SA_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Code',             key: 'code',            width: '130px' },
+  { header: 'Type',             key: 'document_type_id', width: '200px',
+    render: r => <LookupCell kind="documentType" id={r.document_type_id as number} /> },
+  { header: 'Warehouse', key: 'warehouse_id', width: '160px',
+    render: r => <LookupCell kind="warehouse" id={r.warehouse_id as number} /> },
   { header: 'Adjustment Date',  key: 'adjustment_date', width: '140px' },
-  { header: 'Reason',           key: 'adjust_reason',   width: '120px' },
   { header: 'Status', key: 'status', width: '120px',
     render: r => <StatusBadge status={String(r.status ?? '')} /> },
   { header: 'Notes', key: 'notes' },
 ]
 
 const SA_HEADER: FieldDef[] = [
-  { key: 'code',            label: 'Code',            type: 'text',   required: true, placeholder: 'ADJ-001' },
+  { key: 'code',             label: 'Code',            type: 'text',   required: true, placeholder: 'ADJ-001' },
+  { key: 'document_type_id', label: 'Type',            type: 'select', loadOptions: documentTypeOptions('SA') },
   { key: 'adjustment_date', label: 'Adjustment Date', type: 'date',   required: true },
   { key: 'warehouse_id',    label: 'Warehouse',       type: 'select', required: true, loadOptions: warehouseOptions() },
-  { key: 'adjust_reason',   label: 'Reason',          type: 'select', options: ADJUST_REASONS },
   { key: 'notes',           label: 'Notes',           type: 'textarea', rows: 2, span: true },
 ]
 
@@ -103,6 +97,7 @@ export function AdjustmentSection() {
           isOpen onClose={() => setModalDoc(undefined)} onRefresh={load}
           endpoint={`${BASE}/adjustments`}
           doc={modalDoc} entityLabel="Stock Adjustment"
+          docKind="SA"
           listSubFields={['adjustment_date', 'adjust_reason']}
           headerFields={SA_HEADER} lineFields={SA_LINE_FIELDS} lineColumns={SA_LINE_COLS}
           workflowActions={SA_WORKFLOW}

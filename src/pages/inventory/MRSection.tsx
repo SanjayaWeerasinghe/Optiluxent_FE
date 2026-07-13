@@ -6,12 +6,18 @@ import { apiGet } from '../../lib/api'
 import { LookupCell } from '../../lib/lookups'
 import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from '../procurement/DocDetailModal'
-import { warehouseOptions, departmentOptions, productOptions, uomOptions, manufacturingOrderOptions } from '../master-data/useOptions'
+import { warehouseOptions, departmentOptions, productOptions, uomOptions, manufacturingOrderOptions, documentTypeOptions } from '../master-data/useOptions'
 
 const BASE = '/api/v1/inventory'
 
 const MR_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Code',       key: 'code',        width: '130px' },
+  { header: 'Type',       key: 'document_type_id', width: '200px',
+    render: r => <LookupCell kind="documentType" id={r.document_type_id as number} /> },
+  { header: 'Warehouse',            key: 'warehouse_id', width: '160px',
+    render: r => <LookupCell kind="warehouse"        id={r.warehouse_id as number} /> },
+  { header: 'Manufacturing Order',  key: 'mo_id',        width: '160px',
+    render: r => <LookupCell kind="productionOrder" id={r.mo_id as number} /> },
   { header: 'Needed By',  key: 'needed_date', width: '120px' },
   { header: 'Status', key: 'status', width: '130px',
     render: r => <StatusBadge status={String(r.status ?? '')} /> },
@@ -19,7 +25,8 @@ const MR_COLS: Column<Record<string, unknown>>[] = [
 ]
 
 const MR_HEADER: FieldDef[] = [
-  { key: 'code',          label: 'Code',                type: 'text',   required: true, placeholder: 'MR-001' },
+  { key: 'code',             label: 'Code',             type: 'text',   required: true, placeholder: 'MR-001' },
+  { key: 'document_type_id', label: 'Type',             type: 'select', loadOptions: documentTypeOptions('MR') },
   { key: 'mo_id',         label: 'Manufacturing Order', type: 'select', loadOptions: manufacturingOrderOptions() },
   { key: 'needed_date',   label: 'Needed By',           type: 'date',   required: true },
   { key: 'warehouse_id',  label: 'Warehouse',           type: 'select', required: true, loadOptions: warehouseOptions() },
@@ -91,6 +98,7 @@ export function MRSection() {
           isOpen onClose={() => setModalDoc(undefined)} onRefresh={load}
           endpoint={`${BASE}/material-requests`}
           doc={modalDoc} entityLabel="Material Request"
+          docKind="MR"
           listSubFields={['needed_date']}
           headerFields={MR_HEADER} lineFields={MR_LINE_FIELDS} lineColumns={MR_LINE_COLS}
           workflowActions={MR_WORKFLOW}

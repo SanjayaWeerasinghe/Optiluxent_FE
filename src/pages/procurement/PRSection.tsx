@@ -6,12 +6,14 @@ import { apiGet } from '../../lib/api'
 import { LookupCell } from '../../lib/lookups'
 import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from './DocDetailModal'
-import { currencyOptions, departmentOptions, uomOptions, productOptions } from '../master-data/useOptions'
+import { currencyOptions, departmentOptions, uomOptions, productOptions, documentTypeOptions } from '../master-data/useOptions'
 
 const BASE = '/api/v1/procurement'
 
 const PR_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Code',        key: 'code',         width: '130px' },
+  { header: 'Type',        key: 'document_type_id', width: '200px',
+    render: r => <LookupCell kind="documentType" id={r.document_type_id as number} /> },
   { header: 'Date',        key: 'request_date', width: '110px' },
   { header: 'Required By', key: 'required_date', width: '110px' },
   { header: 'Status', key: 'status', width: '150px',
@@ -20,7 +22,8 @@ const PR_COLS: Column<Record<string, unknown>>[] = [
 ]
 
 const PR_HEADER: FieldDef[] = [
-  { key: 'code',          label: 'Code',          type: 'text', required: true, placeholder: 'PR-001' },
+  { key: 'code',             label: 'Code',         type: 'text', required: true, placeholder: 'PR-001' },
+  { key: 'document_type_id', label: 'Type',         type: 'select', loadOptions: documentTypeOptions('PR') },
   { key: 'request_date',  label: 'Request Date',  type: 'date', required: true },
   { key: 'required_date', label: 'Required By',   type: 'date' },
   { key: 'department_id', label: 'Department',    type: 'select', loadOptions: departmentOptions() },
@@ -113,6 +116,7 @@ export function PRSection() {
           endpoint={`${BASE}/purchase-requests`}
           doc={modalDoc}
           entityLabel="Purchase Request"
+          docKind="PR"
           listSubFields={['request_date', 'required_date']}
           headerFields={PR_HEADER}
           lineFields={PR_LINE_FIELDS}

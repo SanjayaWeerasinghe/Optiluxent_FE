@@ -27,6 +27,17 @@ function rowBorderClass(row: Record<string, unknown>): string {
   return STATUS_BORDER[String(row.status ?? '')] ?? 'border-l-transparent'
 }
 
+// Postgres DATE columns come back through Go as full RFC3339 datetimes
+// (e.g. "2026-07-12T00:00:00Z"). Show them as yyyy-MM-dd in table cells so
+// lists don't leak the T00:00:00Z suffix.
+const ISO_DATE_TIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/
+
+function formatCellValue(v: unknown): string {
+  if (v === null || v === undefined || v === '') return '—'
+  if (typeof v === 'string' && ISO_DATE_TIME_RE.test(v)) return v.slice(0, 10)
+  return String(v)
+}
+
 export interface Column<T> {
   header:  string
   key:     string
@@ -154,7 +165,7 @@ export function Table<T extends Record<string, unknown>>({
                 >
                   {col.render
                     ? col.render(row)
-                    : String(row[col.key] ?? '—')}
+                    : formatCellValue(row[col.key])}
                 </td>
               ))}
             </tr>
