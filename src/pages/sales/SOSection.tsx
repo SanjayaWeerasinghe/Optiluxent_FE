@@ -9,6 +9,7 @@ import { DocDetailModal, type WorkflowAction } from '../procurement/DocDetailMod
 import {
   customerOptions, currencyOptions, paymentTermOptions,
   warehouseOptions, uomOptions, productOptions, taxCodeOptions, documentTypeOptions,
+  salesQuotationOptions,
 } from '../master-data/useOptions'
 
 const BASE = '/api/v1/sales'
@@ -32,6 +33,7 @@ const SO_COLS: Column<Record<string, unknown>>[] = [
 const SO_HEADER: FieldDef[] = [
   { key: 'code',                   label: 'Code',              type: 'text',     required: true, placeholder: 'SO-001' },
   { key: 'document_type_id',       label: 'Type',              type: 'select',   loadOptions: documentTypeOptions('SO') },
+  { key: 'sq_id',                  label: 'Source Quotation',  type: 'select',   loadOptions: salesQuotationOptions() },
   { key: 'customer_id',            label: 'Customer',          type: 'select',   required: true, loadOptions: customerOptions() },
   { key: 'order_date',             label: 'Order Date',        type: 'date',     required: true },
   { key: 'expected_delivery_date', label: 'Expected Delivery', type: 'date' },

@@ -162,6 +162,19 @@ export function loaderForFieldKind(kind: string): () => Promise<SelectOption[]> 
   }
 }
 
+export function userOptions(): () => Promise<SelectOption[]> {
+  return () =>
+    apiGet<{ users?: { id: number; email: string; first_name?: string; last_name?: string }[] }>('/api/v1/users?limit=200')
+      .then(res => {
+        const rows = res.users ?? []
+        return rows.map(u => {
+          const name = [u.first_name, u.last_name].filter(Boolean).join(' ').trim()
+          return { value: u.id, label: name ? `${name} <${u.email}>` : u.email }
+        })
+      })
+      .catch(() => [])
+}
+
 export function documentTypeOptions(model: string): () => Promise<SelectOption[]> {
   return () =>
     apiGet<{ id: number; code: string; name: string; is_active: boolean }[]>(`/api/v1/masterdata/document-types?model=${encodeURIComponent(model)}`)

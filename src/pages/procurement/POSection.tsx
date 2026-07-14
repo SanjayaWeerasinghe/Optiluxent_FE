@@ -9,6 +9,7 @@ import { DocDetailModal, type WorkflowAction } from './DocDetailModal'
 import {
   currencyOptions, paymentTermOptions, warehouseOptions,
   uomOptions, productOptions, taxCodeOptions, supplierOptions, documentTypeOptions,
+  purchaseRequestOptions,
 } from '../master-data/useOptions'
 
 const BASE = '/api/v1/procurement'
@@ -30,6 +31,7 @@ const PO_COLS: Column<Record<string, unknown>>[] = [
 const PO_HEADER: FieldDef[] = [
   { key: 'code',             label: 'Code',          type: 'text',   required: true, placeholder: 'PO-001' },
   { key: 'document_type_id', label: 'Type',          type: 'select', loadOptions: documentTypeOptions('PO') },
+  { key: 'pr_id',            label: 'Source Purchase Request', type: 'select', loadOptions: purchaseRequestOptions() },
   { key: 'supplier_id',     label: 'Supplier',       type: 'select', required: true, loadOptions: supplierOptions() },
   { key: 'order_date',      label: 'Order Date',     type: 'date',   required: true },
   { key: 'expected_date',   label: 'Expected Date',  type: 'date' },

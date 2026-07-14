@@ -51,6 +51,7 @@ const SA_LINE_COLS: Column<Record<string, unknown>>[] = [
 
 const SA_WORKFLOW: WorkflowAction[] = [
   { label: 'Confirm Adjustment', action: 'confirm', variant: 'primary', icon: 'check_circle', visibleStatuses: ['DRAFT'] },
+  { label: 'Cancel',             action: 'cancel',  variant: 'danger',  icon: 'block',        visibleStatuses: ['DRAFT'] },
 ]
 
 export function AdjustmentSection() {

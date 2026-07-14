@@ -6,7 +6,7 @@ import { apiGet } from '../../lib/api'
 import { LookupCell } from '../../lib/lookups'
 import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from '../procurement/DocDetailModal'
-import { warehouseOptions, productOptions, documentTypeOptions } from '../master-data/useOptions'
+import { warehouseOptions, productOptions, documentTypeOptions, userOptions } from '../master-data/useOptions'
 
 const BASE = '/api/v1/inventory'
 
@@ -35,6 +35,7 @@ const QC_HEADER: FieldDef[] = [
   { key: 'warehouse_id',   label: 'Warehouse',      type: 'select', loadOptions: warehouseOptions() },
   { key: 'reference_type', label: 'Reference Type', type: 'text',   placeholder: 'GRN' },
   { key: 'reference_id',   label: 'Reference ID',   type: 'number', min: 1 },
+  { key: 'inspector_id',   label: 'Inspector',      type: 'select', loadOptions: userOptions() },
   { key: 'notes',          label: 'Notes',          type: 'textarea', rows: 2, span: true },
 ]
 

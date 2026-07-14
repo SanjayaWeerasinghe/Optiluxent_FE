@@ -53,8 +53,10 @@ const MR_LINE_COLS: Column<Record<string, unknown>>[] = [
 ]
 
 const MR_WORKFLOW: WorkflowAction[] = [
-  { label: 'Approve', action: 'approve', variant: 'primary', icon: 'check_circle', visibleStatuses: ['DRAFT'] },
-  { label: 'Reject',  action: 'reject',  variant: 'danger',  icon: 'cancel',       visibleStatuses: ['DRAFT'] },
+  { label: 'Submit for Approval', action: 'submit',  variant: 'primary', icon: 'send',         visibleStatuses: ['DRAFT'] },
+  { label: 'Approve',             action: 'approve', variant: 'primary', icon: 'check_circle', visibleStatuses: ['PENDING_APPROVAL'] },
+  { label: 'Reject',              action: 'reject',  variant: 'danger',  icon: 'cancel',       visibleStatuses: ['PENDING_APPROVAL'] },
+  { label: 'Cancel',              action: 'cancel',  variant: 'danger',  icon: 'block',        visibleStatuses: ['DRAFT', 'PENDING_APPROVAL'] },
 ]
 
 export function MRSection() {

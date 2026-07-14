@@ -58,6 +58,7 @@ const DO_LINE_COLS: Column<Record<string, unknown>>[] = [
 
 const DO_WORKFLOW: WorkflowAction[] = [
   { label: 'Confirm Delivery', action: 'confirm', variant: 'primary', icon: 'local_shipping', visibleStatuses: ['DRAFT'] },
+  { label: 'Cancel',           action: 'cancel',  variant: 'danger',  icon: 'block',          visibleStatuses: ['DRAFT'] },
 ]
 
 export function DeliverySection() {

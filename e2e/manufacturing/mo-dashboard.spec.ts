@@ -53,6 +53,8 @@ test.describe('Manufacturing — MO dashboard', () => {
       requested_qty: 200,
       uom_id: ids.uomKg,
     })
+    // MR now requires Submit before Approve — mirror the real workflow
+    await api.post(`/api/v1/inventory/material-requests/${mr.id}/submit`)
     await api.post(`/api/v1/inventory/material-requests/${mr.id}/approve`)
 
     // 3. Create + confirm a Goods Issue referencing the MO

@@ -61,6 +61,7 @@ const GI_LINE_COLS: Column<Record<string, unknown>>[] = [
 
 const GI_WORKFLOW: WorkflowAction[] = [
   { label: 'Confirm Issue', action: 'confirm', variant: 'primary', icon: 'check_circle', visibleStatuses: ['DRAFT'] },
+  { label: 'Cancel',        action: 'cancel',  variant: 'danger',  icon: 'block',        visibleStatuses: ['DRAFT'] },
 ]
 
 export function IssueSection() {

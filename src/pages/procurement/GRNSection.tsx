@@ -58,6 +58,7 @@ const GRN_LINE_COLS: Column<Record<string, unknown>>[] = [
 
 const GRN_WORKFLOW: WorkflowAction[] = [
   { label: 'Confirm Receipt', action: 'confirm', variant: 'primary', icon: 'check_circle', visibleStatuses: ['DRAFT'] },
+  { label: 'Cancel',          action: 'cancel',  variant: 'danger',  icon: 'block',        visibleStatuses: ['DRAFT'] },
 ]
 
 export function GRNSection() {
