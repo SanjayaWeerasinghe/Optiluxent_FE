@@ -46,6 +46,14 @@ interface Props {
    * modal renders fields for whatever DocumentType is picked, and persists
    * their values via /documents/:kind/:id/fields on save. */
   docKind?:            string
+  /** When the user picks a source doc in `field` (e.g. `pr_id` on a PO
+   * with a "With PR" Type), fetch that source's lines and populate the
+   * current form's lines with them. Only fires in create-mode (or when
+   * there are no existing lines) so it never clobbers editing. */
+  prefillLinesFrom?:   {
+    field:  string
+    fetch:  (id: number) => Promise<Record<string, unknown>[]>
+  }
 }
 
 export function DocDetailModal({
@@ -60,6 +68,7 @@ export function DocDetailModal({
   idKey = 'id',
   listSubFields,
   docKind,
+  prefillLinesFrom,
 }: Props) {
   // navDoc: record the user navigated to via the list panel (overrides doc prop)
   const [navDoc, setNavDoc] = useState<Record<string, unknown> | null>(null)
@@ -67,7 +76,16 @@ export function DocDetailModal({
   const isCreate   = activeDoc === null
   const docId      = activeDoc?.[idKey] as number | undefined
   const status     = String(activeDoc?.status ?? 'DRAFT')
-  const isEditable = isCreate || editableStatuses.includes(status)
+  // Header fields are editable ONLY while the doc has not been created yet.
+  // Once "Initiated" (i.e. the doc row exists), the header locks — this
+  // avoids the drift where users create a doc, walk away, then re-open
+  // and mutate its supplier/customer/warehouse mid-workflow.
+  const headerEditable = isCreate
+  // Line items are editable whenever the status is in the editable set —
+  // typically DRAFT. The doc must exist first (edit mode).
+  const linesEditable  = !isCreate && editableStatuses.includes(status)
+  // Backwards-compatible alias used by the workflow / footer buttons below.
+  const isEditable = headerEditable || linesEditable
 
   const [form,          setForm]          = useState<Record<string, unknown>>({})
   const [headerLoading, setHeaderLoading] = useState(false)
@@ -130,6 +148,33 @@ export function DocDetailModal({
       .finally(() => setHeaderLoading(false))
   }, [navDoc]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Watch the "prefill trigger" field (e.g. pr_id on a PO). When the user
+  // picks a source doc and this form has no lines yet, copy its lines in as
+  // editable drafts. Ignores updates when the doc already has lines so we
+  // never clobber user work.
+  const prefillTriggerValue = prefillLinesFrom ? form[prefillLinesFrom.field] : undefined
+  useEffect(() => {
+    if (!isOpen || !prefillLinesFrom) return
+    const src = prefillTriggerValue
+    if (!src || src === '' || Number(src) === 0) return
+    // Only prefill in create mode, or on an existing doc that has no lines.
+    if (!isCreate && lines.length > 0) return
+    if (isCreate && lines.length > 0) return
+    prefillLinesFrom.fetch(Number(src))
+      .then(rows => {
+        if (!Array.isArray(rows) || rows.length === 0) return
+        setLines(rows.map((r, i) => ({
+          ...r,
+          line_number: i + 1,
+          _new:        true,
+          _localId:    Date.now() + i,
+          id:          undefined, // strip src line id
+        })))
+      })
+      .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefillTriggerValue])
+
   // Load line items whenever the active document ID changes
   useEffect(() => {
     if (!isOpen || isCreate || !docId || lineFields.length === 0) return
@@ -164,11 +209,14 @@ export function DocDetailModal({
       )
 
       let id: number
+      let createdDoc: Record<string, unknown> | null = null
       if (isCreate) {
-        const created = await apiPost<Record<string, unknown>>(endpoint, headerBody)
-        id = created[idKey] as number
+        createdDoc = await apiPost<Record<string, unknown>>(endpoint, headerBody)
+        id = createdDoc[idKey] as number
       } else {
-        await apiPut(`${endpoint}/${docId}`, headerBody)
+        // Header locks on Initiate — in edit mode we no longer PUT the header,
+        // only the lines. If a caller ever needs to edit the header again the
+        // path is: cancel the doc and start over.
         id = docId!
       }
 
@@ -193,8 +241,15 @@ export function DocDetailModal({
         } catch { /* non-fatal — values can be re-saved later */ }
       }
 
-      onClose()
-      onRefresh()
+      if (createdDoc) {
+        // Initiate flow: keep the modal open and transition into edit mode
+        // so the user can now add line items (and the header is locked).
+        setNavDoc(createdDoc)
+        onRefresh()
+      } else {
+        onClose()
+        onRefresh()
+      }
     } catch (e) {
       setError((e as Error).message ?? 'Save failed')
     } finally {
@@ -229,7 +284,7 @@ export function DocDetailModal({
   const visibleLines     = lines.filter(l => !l._deleted)
   const visibleWorkflows = workflowActions.filter(a => !isCreate && a.visibleStatuses.includes(status))
 
-  const linesWithActions: Column<Record<string, unknown>>[] = isEditable
+  const linesWithActions: Column<Record<string, unknown>>[] = linesEditable
     ? [
         ...lineColumns,
         {
@@ -329,7 +384,7 @@ export function DocDetailModal({
           <Button variant="outline" size="sm" onClick={onClose} disabled={saving || !!actioning} data-testid="doc-close">
             Close
           </Button>
-          {isEditable && (
+          {(isCreate || linesEditable) && (
             <Button
               variant="primary"
               size="sm"
@@ -338,7 +393,7 @@ export function DocDetailModal({
               onClick={handleSave}
               data-testid="doc-save"
             >
-              {isCreate ? `Create ${entityLabel}` : 'Save Changes'}
+              {isCreate ? `Initiate ${entityLabel}` : 'Save Line Changes'}
             </Button>
           )}
         </div>
@@ -365,7 +420,7 @@ export function DocDetailModal({
                   field={f}
                   value={form[f.key]}
                   onChange={v => setForm(p => ({ ...p, [f.key]: v }))}
-                  disabled={!isEditable}
+                  disabled={!headerEditable}
                 />
               </div>
             ))}
@@ -383,14 +438,15 @@ export function DocDetailModal({
           </div>
         </div>
 
-        {/* Line items */}
-        {lineFields.length > 0 && (
+        {/* Line items — hidden entirely in create mode. Only visible once the
+            doc has been Initiated (i.e. exists on the server). */}
+        {lineFields.length > 0 && !isCreate && (
           <div>
             <div className="flex items-center justify-between mb-3">
               <span className="text-[11px] text-label-mono font-label-mono uppercase tracking-wider text-on-surface-variant">
                 Line Items
               </span>
-              {isEditable && !showAddForm && (
+              {linesEditable && !showAddForm && (
                 <Button variant="outline" size="sm" icon="add" onClick={() => setShowAddForm(true)} data-testid="line-add">
                   Add Line
                 </Button>
@@ -404,7 +460,7 @@ export function DocDetailModal({
               empty="No line items yet"
             />
 
-            {showAddForm && isEditable && (
+            {showAddForm && linesEditable && (
               <div className="mt-3 p-4 rounded-lg border border-outline-variant bg-surface-container-low space-y-4">
                 <p className="text-[11px] text-label-mono font-label-mono uppercase tracking-wider text-on-surface-variant">
                   New Line

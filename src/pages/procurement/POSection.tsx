@@ -133,6 +133,25 @@ export function POSection() {
           lineFields={PO_LINE_FIELDS}
           lineColumns={PO_LINE_COLS}
           workflowActions={PO_WORKFLOW}
+          prefillLinesFrom={{
+            field: 'pr_id',
+            // Fetch the PR + its lines, then map PR-shape fields to PO-shape.
+            // Only fires in create mode / empty-lines state — see DocDetailModal.
+            fetch: async prID => {
+              const pr = await apiGet<{ lines?: Array<Record<string, unknown>> }>(`${BASE}/purchase-requests/${prID}`)
+              const src = pr?.lines ?? []
+              return src.map(l => ({
+                product_id:  l.product_id,
+                variant_id:  l.variant_id,
+                description: l.description,
+                quantity:    l.quantity,
+                uom_id:      l.uom_id,
+                // PR carries EstimatedPrice; PO uses UnitPrice.
+                unit_price:  l.estimated_price ?? 0,
+                notes:       l.notes,
+              }))
+            },
+          }}
         />
       )}
     </>
