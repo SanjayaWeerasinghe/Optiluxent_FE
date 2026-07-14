@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { apiGet } from '../../lib/api'
+import { formatMoney } from '../../lib/money'
 import { StatTile } from '../../components/dashboard/StatTile'
 import { Table, type Column } from '../../components/ui/Table'
 import { StatusBadge } from '../../components/ui/Badge'
@@ -17,7 +18,7 @@ const RECENT_PO: Column<Record<string, unknown>>[] = [
   { header: 'Status',   key: 'status',       width: '140px',
     render: r => <StatusBadge status={String(r.status ?? '')} /> },
   { header: 'Total',    key: 'total_amount', width: '120px', align: 'right',
-    render: r => Number(r.total_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) },
+    render: r => formatMoney(r.total_amount as number) },
   { header: 'Order Date', key: 'order_date', width: '110px' },
 ]
 
@@ -97,12 +98,12 @@ export function DashboardSection() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatTile label="Requests"          value={prs.length}    sub={`${stats.prPending} pending · ${stats.prApproved} approved`} accent="info"    icon="receipt_long" loading={loading} />
         <StatTile label="Purchase Orders"   value={pos.length}    sub={`${stats.poOpen} open`}                                       accent="primary" icon="shopping_cart" loading={loading} />
-        <StatTile label="Committed Spend"   value={stats.poCommitted.toLocaleString(undefined, { minimumFractionDigits: 2 })} sub="Σ non-draft PO totals" accent="warning" icon="request_quote" loading={loading} />
-        <StatTile label="GRNs Received"     value={stats.grnReceivedCount} sub={`${stats.grnValue.toLocaleString(undefined, { minimumFractionDigits: 2 })} value`} accent="success" icon="move_to_inbox" loading={loading} />
+        <StatTile label="Committed Spend"   value={formatMoney(stats.poCommitted)} sub="Σ non-draft PO totals" accent="warning" icon="request_quote" loading={loading} />
+        <StatTile label="GRNs Received"     value={stats.grnReceivedCount} sub={`${formatMoney(stats.grnValue)} value`} accent="success" icon="move_to_inbox" loading={loading} />
 
         <StatTile label="POs Awaiting Delivery" value={stats.poOpen}   sub="Confirmed / partial"                accent="warning" icon="pending"          loading={loading} />
         <StatTile label="Invoices"          value={invs.length}        sub="Purchase invoices captured"          accent="neutral" icon="receipt"          loading={loading} />
-        <StatTile label="Invoiced Spend"    value={stats.invoicedSpend.toLocaleString(undefined, { minimumFractionDigits: 2 })} sub="Excludes drafts" accent="success" icon="payments" loading={loading} />
+        <StatTile label="Invoiced Spend"    value={formatMoney(stats.invoicedSpend)} sub="Excludes drafts" accent="success" icon="payments" loading={loading} />
         <StatTile label="Suppliers (PO)"    value={new Set(pos.map(p => p.supplier_id)).size} sub="Unique suppliers used" accent="info" icon="handshake" loading={loading} />
       </div>
 

@@ -3,6 +3,7 @@ import { Button, Input } from '../../components/ui'
 import { Table, type Column } from '../../components/ui/Table'
 import { StatusBadge } from '../../components/ui/Badge'
 import { apiGet } from '../../lib/api'
+import { formatMoney } from '../../lib/money'
 import { LookupCell } from '../../lib/lookups'
 import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from '../procurement/DocDetailModal'
@@ -23,9 +24,9 @@ const SI_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Invoice Date', key: 'invoice_date',     width: '110px' },
   { header: 'Due Date',     key: 'due_date',         width: '110px' },
   { header: 'Total',        key: 'total_amount',     width: '110px', align: 'right',
-    render: r => Number(r.total_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) },
+    render: r => formatMoney(r.total_amount as number) },
   { header: 'Paid',         key: 'paid_amount',      width: '100px', align: 'right',
-    render: r => Number(r.paid_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) },
+    render: r => formatMoney(r.paid_amount as number) },
   { header: 'Status', key: 'status', width: '120px',
     render: r => <StatusBadge status={String(r.status ?? '')} /> },
 ]

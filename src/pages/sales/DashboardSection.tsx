@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { apiGet } from '../../lib/api'
+import { formatMoney } from '../../lib/money'
 import { StatTile } from '../../components/dashboard/StatTile'
 import { Table, type Column } from '../../components/ui/Table'
 import { StatusBadge } from '../../components/ui/Badge'
@@ -25,7 +26,7 @@ const RECENT_SO: Column<Record<string, unknown>>[] = [
   { header: 'Status',    key: 'status',      width: '140px',
     render: r => <StatusBadge status={String(r.status ?? '')} /> },
   { header: 'Total',     key: 'total_amount',width: '120px', align: 'right',
-    render: r => Number(r.total_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) },
+    render: r => formatMoney(r.total_amount as number) },
   { header: 'Date',      key: 'order_date',  width: '110px' },
 ]
 
@@ -91,7 +92,7 @@ export function DashboardSection() {
         <StatTile label="Deliveries"       value={dos.length}         sub={`${stats.doInflight} in flight`}                          accent="info"    icon="local_shipping" loading={loading} />
         <StatTile label="Invoices"         value={sis.length}         sub={`${stats.soInvoiced} SO invoiced`}                        accent="neutral" icon="receipt" loading={loading} />
 
-        <StatTile label="Revenue (confirmed)" value={stats.revenue.toLocaleString(undefined, { minimumFractionDigits: 2 })} sub="Sum of non-void SI totals" accent="success" icon="payments" loading={loading} />
+        <StatTile label="Revenue (confirmed)" value={formatMoney(stats.revenue)} sub="Sum of non-void SI totals" accent="success" icon="payments" loading={loading} />
         <StatTile label="SO → Delivered"   value={stats.soDelivered}  sub="Ready for invoicing"                                      accent="success" icon="task_alt" loading={loading} />
         <StatTile label="Awaiting Delivery" value={stats.soConfirmed} sub="Confirmed SOs to ship"                                    accent="warning" icon="pending_actions" loading={loading} />
         <StatTile label="Quotations Won"   value={sqs.filter(q => q.status === 'CONVERTED').length} sub="Converted to SO"           accent="primary" icon="check_circle" loading={loading} />

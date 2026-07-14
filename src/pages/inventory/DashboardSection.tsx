@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { apiGet } from '../../lib/api'
+import { formatMoney } from '../../lib/money'
 import { StatTile } from '../../components/dashboard/StatTile'
 import { Table, type Column } from '../../components/ui/Table'
 import { LookupCell } from '../../lib/lookups'
@@ -107,7 +108,7 @@ export function DashboardSection() {
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatTile label="Products (SKUs)"     value={stats.skuCount}       sub={`${stats.balanceLines} balance rows`}    accent="primary" icon="inventory_2" loading={loading} />
-        <StatTile label="Total Valuation"     value={stats.valuation.toLocaleString(undefined, { minimumFractionDigits: 2 })} sub="Σ qty × cost" accent="success" icon="payments" loading={loading} />
+        <StatTile label="Total Valuation"     value={formatMoney(stats.valuation)} sub="Σ qty × cost" accent="success" icon="payments" loading={loading} />
         <StatTile label="Low Stock"           value={stats.lowStockCount}  sub="Below min_stock_qty"                     accent="warning" icon="warning_amber" loading={loading} />
         <StatTile label="Pending Material Requests" value={stats.pendingMR} sub="Not completed"                          accent="info"    icon="assignment" loading={loading} />
 

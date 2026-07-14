@@ -3,6 +3,7 @@ import { Button, Input } from '../../components/ui'
 import { Table, type Column } from '../../components/ui/Table'
 import { StatusBadge } from '../../components/ui/Badge'
 import { apiGet } from '../../lib/api'
+import { formatMoney } from '../../lib/money'
 import { LookupCell } from '../../lib/lookups'
 import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from '../procurement/DocDetailModal'
@@ -22,7 +23,7 @@ const SQ_COLS: Column<Record<string, unknown>>[] = [
   { header: 'Quotation Date', key: 'quotation_date', width: '120px' },
   { header: 'Valid Until',    key: 'valid_until',    width: '120px' },
   { header: 'Total',          key: 'total_amount',   width: '110px', align: 'right',
-    render: r => Number(r.total_amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) },
+    render: r => formatMoney(r.total_amount as number) },
   { header: 'Converted SO',   key: 'converted_so_id', width: '120px',
     render: r => r.converted_so_id ? <span className="text-primary font-semibold">#{String(r.converted_so_id)}</span> : '—' },
   { header: 'Status', key: 'status', width: '120px',
