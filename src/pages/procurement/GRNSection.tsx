@@ -121,6 +121,23 @@ export function GRNSection() {
           lineFields={GRN_LINE_FIELDS}
           lineColumns={GRN_LINE_COLS}
           workflowActions={GRN_WORKFLOW}
+          prefillLinesFrom={{
+            field: 'po_id',
+            // Pull the PO's confirmed lines into the GRN — user confirms
+            // qty/unit_cost against what actually arrived, then saves.
+            fetch: async poID => {
+              const po = await apiGet<{ lines?: Array<Record<string, unknown>> }>(`${BASE}/purchase-orders/${poID}`)
+              const src = po?.lines ?? []
+              return src.map(l => ({
+                product_id:  l.product_id,
+                variant_id:  l.variant_id,
+                quantity:    l.quantity,
+                uom_id:      l.uom_id,
+                unit_cost:   l.unit_price ?? 0,
+                notes:       l.notes,
+              }))
+            },
+          }}
         />
       )}
     </>
