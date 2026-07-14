@@ -2,7 +2,14 @@ import { useState, useEffect, useCallback } from 'react'
 import { Icon } from '../../components/ui/Icon'
 import { Badge } from '../../components/ui/Badge'
 import { apiGet } from '../../lib/api'
-import { useLookupLabel } from '../../lib/lookups'
+import { useLookupLabel, type LookupKind } from '../../lib/lookups'
+
+// Small inline pretty-printer for a FK reference inside a line-op log entry.
+function LineRef({ kind, id }: { kind: LookupKind; id: number | null | undefined }) {
+  const fmt = useLookupLabel()
+  if (!id) return <>—</>
+  return <>{fmt(kind, id)}</>
+}
 
 interface AuditLog {
   id:          number
@@ -37,23 +44,56 @@ function formatTs(iso: string) {
   })
 }
 
-function actionVariant(action: string) {
-  if (action === 'CREATE') return 'success' as const
-  if (action === 'DELETE') return 'error' as const
-  if (action === 'UPDATE') return 'info' as const
-  return 'secondary' as const
+function actionVariant(action: string): 'success' | 'error' | 'warning' | 'info' | 'primary' | 'secondary' {
+  switch (action) {
+    case 'CREATE':                                    return 'success'
+    case 'DELETE': case 'LINE_DELETED': case 'CANCEL':
+    case 'REJECT':                                    return 'error'
+    case 'UPDATE': case 'LINE_UPDATED':               return 'info'
+    case 'LINE_ADDED':                                return 'primary'
+    case 'APPROVE': case 'CONFIRM': case 'RECEIVE':
+    case 'COMPLETE': case 'FINALIZE': case 'POST':
+    case 'PAY': case 'ACCEPT':                        return 'success'
+    case 'SUBMIT': case 'START': case 'RELEASE':
+    case 'SEND':                                      return 'warning'
+    default:                                          return 'secondary'
+  }
 }
 
-// Extract the workflow verb from a POST path — /some-doc/:id/confirm →
-// "confirm". Falls back to the raw action if no workflow segment matches.
-function verbFromLog(log: AuditLog): string {
-  // The audit payload doesn't carry the full path today; use the action + a
-  // heuristic. When action is CREATE we peek at new_values for a `status`
-  // to guess a workflow transition.
-  const nv = log.new_values as Record<string, unknown> | null
-  if (nv && typeof nv === 'object' && 'reason' in nv) return 'rejected'
-  if (nv && typeof nv === 'object' && 'amount' in nv) return 'recorded payment on'
-  return log.action.toLowerCase()
+// One-line human summary for the whole action. `entityLabel` is the singular
+// noun for the doc kind so we say "confirmed this Goods Receipt", not
+// "confirmed this goods-receipts".
+function summarize(action: string, userName: string, entityLabel: string): string {
+  switch (action) {
+    case 'CREATE':       return `${userName} initiated this ${entityLabel}.`
+    case 'DELETE':       return `${userName} deleted this ${entityLabel}.`
+    case 'CONFIRM':      return `${userName} confirmed this ${entityLabel}.`
+    case 'SUBMIT':       return `${userName} submitted this ${entityLabel} for approval.`
+    case 'APPROVE':      return `${userName} approved this ${entityLabel}.`
+    case 'REJECT':       return `${userName} rejected this ${entityLabel}.`
+    case 'CANCEL':       return `${userName} cancelled this ${entityLabel}.`
+    case 'ACCEPT':       return `${userName} accepted this ${entityLabel}.`
+    case 'START':        return `${userName} started this ${entityLabel}.`
+    case 'COMPLETE':     return `${userName} completed this ${entityLabel}.`
+    case 'FINALIZE':     return `${userName} finalized this ${entityLabel}.`
+    case 'RELEASE':      return `${userName} released this ${entityLabel}.`
+    case 'SEND':         return `${userName} sent this ${entityLabel}.`
+    case 'RECEIVE':      return `${userName} received this ${entityLabel}.`
+    case 'POST':         return `${userName} posted this ${entityLabel}.`
+    case 'PAY':          return `${userName} recorded a payment.`
+    case 'LINE_ADDED':   return `${userName} added a line item.`
+    case 'LINE_UPDATED': return `${userName} updated a line item.`
+    case 'LINE_DELETED': return `${userName} removed a line item.`
+    case 'UPDATE':       return `${userName} updated this ${entityLabel}.`
+    default:             return `${userName} performed ${action.toLowerCase().replace(/_/g, ' ')}.`
+  }
+}
+
+// Nice human-readable label for the resource path segment, e.g.
+// "purchase-orders" → "Purchase Order".
+function humanizeResource(resource: string): string {
+  const singular = resource.replace(/s$/, '')
+  return singular.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
 
 // Turn a change-set into a compact "field: old → new" list.
@@ -131,9 +171,16 @@ export function AuditLogPanel({ resource, resourceId }: Props) {
         )}
 
         {!loading && logs.map(log => {
-          const userName = log.user_id ? format('user', log.user_id) : 'system'
-          const verb     = verbFromLog(log)
+          const userName = log.user_id ? format('user', log.user_id) : 'System'
+          const entity   = humanizeResource(resource)
+          const summary  = summarize(log.action, userName, entity)
           const diffs    = describeDiff(log.new_values, log.old_values)
+          // LINE_ADDED payloads are the raw line body — show the interesting
+          // fields inline (product, qty, notes) rather than the raw JSON.
+          const isLineOp = log.action === 'LINE_ADDED' || log.action === 'LINE_UPDATED'
+          const nv       = (log.new_values && typeof log.new_values === 'object')
+            ? log.new_values as Record<string, unknown>
+            : null
           return (
             <div
               key={log.id}
@@ -141,24 +188,27 @@ export function AuditLogPanel({ resource, resourceId }: Props) {
             >
               <div className="flex items-center justify-between gap-2 mb-1">
                 <div className="flex items-center gap-1.5">
-                  <Badge variant={actionVariant(log.action)}>{log.action}</Badge>
+                  <Badge variant={actionVariant(log.action)}>{log.action.replace(/_/g, ' ')}</Badge>
                   <span className="text-[11px] text-on-surface font-semibold">{userName}</span>
                 </div>
                 <span className="text-[10px] text-on-surface-variant">{formatTs(log.created_at)}</span>
               </div>
-              <div className="text-[12px] text-on-surface-variant leading-relaxed">
-                {log.action === 'CREATE' && `${userName} created this ${resource.replace(/-/g, ' ').replace(/s$/, '')}.`}
-                {log.action === 'DELETE' && `${userName} deleted this record.`}
-                {log.action === 'UPDATE' && diffs.length === 0 && `${userName} ${verb} this record.`}
-                {log.action === 'UPDATE' && diffs.length > 0 && (
-                  <>
-                    <span>{userName} changed:</span>
-                    <ul className="mt-0.5 ml-3 list-disc text-[11px]">
-                      {diffs.map((d, i) => <li key={i}>{d}</li>)}
-                    </ul>
-                  </>
-                )}
-              </div>
+              <div className="text-[12px] text-on-surface leading-relaxed">{summary}</div>
+              {/* Detail body — different renderers per action shape */}
+              {isLineOp && nv && (
+                <ul className="mt-1 ml-3 list-disc text-[11px] text-on-surface-variant">
+                  {'product_id'    in nv && <li>product: <LineRef kind="product" id={nv.product_id as number} /></li>}
+                  {'quantity'      in nv && <li>qty: {String(nv.quantity)}</li>}
+                  {'requested_qty' in nv && <li>requested qty: {String(nv.requested_qty)}</li>}
+                  {'unit_cost'     in nv && <li>unit cost: {String(nv.unit_cost)}</li>}
+                  {'unit_price'    in nv && <li>unit price: {String(nv.unit_price)}</li>}
+                </ul>
+              )}
+              {!isLineOp && diffs.length > 0 && (
+                <ul className="mt-1 ml-3 list-disc text-[11px] text-on-surface-variant">
+                  {diffs.map((d, i) => <li key={i}>{d}</li>)}
+                </ul>
+              )}
             </div>
           )
         })}
