@@ -6,7 +6,7 @@ import { apiGet } from '../../lib/api'
 import { LookupCell } from '../../lib/lookups'
 import { type FieldDef } from '../master-data/CrudSection'
 import { DocDetailModal, type WorkflowAction } from '../procurement/DocDetailModal'
-import { warehouseOptions, productOptions, uomOptions, manufacturingOrderOptions, documentTypeOptions } from '../master-data/useOptions'
+import { warehouseOptions, productOptions, uomOptions, manufacturingOrderOptions, documentTypeOptions, materialRequestOptions } from '../master-data/useOptions'
 
 const BASE = '/api/v1/inventory'
 
@@ -30,12 +30,13 @@ const REF_TYPES = [
 const GI_HEADER: FieldDef[] = [
   { key: 'code',             label: 'Code',           type: 'text',   required: true, placeholder: 'GI-001' },
   { key: 'document_type_id', label: 'Type',           type: 'select', loadOptions: documentTypeOptions('GI') },
-  { key: 'issue_date',     label: 'Issue Date',     type: 'date',   required: true },
-  { key: 'warehouse_id',   label: 'Warehouse',      type: 'select', required: true, loadOptions: warehouseOptions() },
-  { key: 'reference_type', label: 'Reference Type', type: 'select', options: REF_TYPES },
+  { key: 'mr_id',            label: 'Source Material Request', type: 'select', loadOptions: materialRequestOptions() },
+  { key: 'issue_date',       label: 'Issue Date',     type: 'date',   required: true },
+  { key: 'warehouse_id',     label: 'Warehouse',      type: 'select', required: true, loadOptions: warehouseOptions() },
+  { key: 'reference_type',   label: 'Reference Type', type: 'select', options: REF_TYPES },
   // reference_id is a plain MO picker; the user only picks one when reference_type = PRODUCTION_ORDER
-  { key: 'reference_id',   label: 'Reference (MO)', type: 'select', loadOptions: manufacturingOrderOptions() },
-  { key: 'notes',          label: 'Notes',          type: 'textarea', rows: 2, span: true },
+  { key: 'reference_id',     label: 'Reference (MO)', type: 'select', loadOptions: manufacturingOrderOptions() },
+  { key: 'notes',            label: 'Notes',          type: 'textarea', rows: 2, span: true },
 ]
 
 const GI_LINE_FIELDS: FieldDef[] = [
@@ -112,6 +113,20 @@ export function IssueSection() {
           listSubFields={['issue_date']}
           headerFields={GI_HEADER} lineFields={GI_LINE_FIELDS} lineColumns={GI_LINE_COLS}
           workflowActions={GI_WORKFLOW}
+          prefillLinesFrom={{
+            field: 'mr_id',
+            fetch: async mrID => {
+              const mr = await apiGet<{ lines?: Array<Record<string, unknown>> }>(`${BASE}/material-requests/${mrID}`)
+              const src = mr?.lines ?? []
+              return src.map(l => ({
+                product_id: l.product_id,
+                variant_id: l.variant_id,
+                quantity:   l.requested_qty ?? 0,
+                uom_id:     l.uom_id,
+                notes:      l.notes,
+              }))
+            },
+          }}
         />
       )}
     </>

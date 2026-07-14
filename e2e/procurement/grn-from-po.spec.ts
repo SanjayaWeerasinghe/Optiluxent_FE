@@ -40,6 +40,7 @@ test.describe('Procurement — GRN from PO', () => {
     const poCombo = page.getByLabel('Purchase Order', { exact: false }).first()
     await expect(poCombo).toBeVisible({ timeout: 15_000 })
     await poCombo.selectOption({ label: po.code })
+    await page.waitForTimeout(500)
     // Pick a GRN Type (With Purchase Order)
     await page.getByLabel('GRN Type', { exact: false }).selectOption({ label: 'WITH_PO – With Purchase Order' })
     await page.getByLabel('Supplier', { exact: false }).selectOption({ index: 1 })

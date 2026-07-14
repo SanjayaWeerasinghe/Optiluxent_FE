@@ -137,6 +137,24 @@ export function SOSection() {
           lineColumns={SO_LINE_COLS}
           workflowActions={SO_WORKFLOW}
           editableStatuses={['DRAFT']}
+          prefillLinesFrom={{
+            field: 'sq_id',
+            fetch: async sqID => {
+              const sq = await apiGet<{ lines?: Array<Record<string, unknown>> }>(`${BASE}/quotations/${sqID}`)
+              const src = sq?.lines ?? []
+              return src.map(l => ({
+                product_id:   l.product_id,
+                variant_id:   l.variant_id,
+                description:  l.description,
+                quantity:     l.quantity,
+                uom_id:       l.uom_id,
+                unit_price:   l.unit_price ?? 0,
+                discount_pct: l.discount_pct ?? 0,
+                tax_code_id:  l.tax_code_id,
+                notes:        l.notes,
+              }))
+            },
+          }}
         />
       )}
     </>

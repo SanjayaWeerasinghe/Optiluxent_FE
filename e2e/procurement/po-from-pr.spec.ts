@@ -44,6 +44,8 @@ test.describe('Procurement — PO from PR', () => {
     const prCombo = page.getByLabel('Source Purchase Request', { exact: false })
     await expect(prCombo).toBeVisible({ timeout: 15_000 })
     await prCombo.selectOption({ label: pr.code })
+    // Let the prefill fetch settle before we submit.
+    await page.waitForTimeout(500)
 
     // Fill the required PO fields
     await page.getByLabel('Supplier', { exact: false }).first().selectOption({ index: 1 })
