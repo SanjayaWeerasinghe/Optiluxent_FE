@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Icon } from '../../components/ui/Icon'
 import { Badge } from '../../components/ui/Badge'
 import { apiGet } from '../../lib/api'
+import { useLookupLabel } from '../../lib/lookups'
 
 interface AuditLog {
   id:          number
@@ -20,10 +21,19 @@ interface Props {
   resourceId: string
 }
 
+// ── Formatting helpers ───────────────────────────────────────────────────────
+
 function formatTs(iso: string) {
-  return new Date(iso).toLocaleString(undefined, {
+  const d = new Date(iso)
+  const now = Date.now()
+  const diffMin = Math.round((now - d.getTime()) / 60000)
+  if (diffMin < 1)          return 'just now'
+  if (diffMin < 60)         return `${diffMin}m ago`
+  if (diffMin < 60 * 24)    return `${Math.round(diffMin / 60)}h ago`
+  if (diffMin < 60 * 24 * 7) return `${Math.round(diffMin / (60 * 24))}d ago`
+  return d.toLocaleString(undefined, {
     month: 'short', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour: '2-digit', minute: '2-digit',
   })
 }
 
@@ -34,32 +44,44 @@ function actionVariant(action: string) {
   return 'secondary' as const
 }
 
-function JsonPreview({ data }: { data: unknown }) {
-  const [open, setOpen] = useState(false)
-  if (!data) return null
-  const preview = JSON.stringify(data)
-  if (preview === '{}' || preview === 'null') return null
-  return (
-    <div className="mt-1.5">
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-1 text-[10px] text-on-surface-variant hover:text-on-surface transition-colors"
-      >
-        <Icon name={open ? 'expand_less' : 'expand_more'} size={12} />
-        {open ? 'hide' : 'show'} values
-      </button>
-      {open && (
-        <pre className="mt-1 p-2 rounded bg-surface-container text-[10px] leading-relaxed overflow-x-auto whitespace-pre-wrap break-all text-on-surface font-mono max-h-40">
-          {JSON.stringify(data, null, 2)}
-        </pre>
-      )}
-    </div>
-  )
+// Extract the workflow verb from a POST path — /some-doc/:id/confirm →
+// "confirm". Falls back to the raw action if no workflow segment matches.
+function verbFromLog(log: AuditLog): string {
+  // The audit payload doesn't carry the full path today; use the action + a
+  // heuristic. When action is CREATE we peek at new_values for a `status`
+  // to guess a workflow transition.
+  const nv = log.new_values as Record<string, unknown> | null
+  if (nv && typeof nv === 'object' && 'reason' in nv) return 'rejected'
+  if (nv && typeof nv === 'object' && 'amount' in nv) return 'recorded payment on'
+  return log.action.toLowerCase()
 }
+
+// Turn a change-set into a compact "field: old → new" list.
+function describeDiff(newVals: unknown, oldVals: unknown): string[] {
+  const out: string[] = []
+  const nv = (newVals && typeof newVals === 'object') ? newVals as Record<string, unknown> : {}
+  const ov = (oldVals && typeof oldVals === 'object') ? oldVals as Record<string, unknown> : {}
+  const skip = new Set(['created_at', 'updated_at', 'deleted_at', 'id', 'tenant_id'])
+  for (const k of Object.keys(nv)) {
+    if (skip.has(k)) continue
+    const nVal = nv[k]
+    const oVal = ov[k]
+    // Skip nested arrays/objects — too noisy for a summary line.
+    if (nVal !== null && typeof nVal === 'object') continue
+    if (String(oVal ?? '') === String(nVal ?? '')) continue
+    const from = oVal === undefined || oVal === null || oVal === '' ? '—' : String(oVal)
+    const to   = nVal === undefined || nVal === null || nVal === '' ? '—' : String(nVal)
+    out.push(`${k}: ${from} → ${to}`)
+  }
+  return out.slice(0, 4)
+}
+
+// ── Component ────────────────────────────────────────────────────────────────
 
 export function AuditLogPanel({ resource, resourceId }: Props) {
   const [logs,    setLogs]    = useState<AuditLog[]>([])
   const [loading, setLoading] = useState(true)
+  const format = useLookupLabel()
 
   const load = useCallback(() => {
     if (!resource || !resourceId) return
@@ -80,7 +102,7 @@ export function AuditLogPanel({ resource, resourceId }: Props) {
       <div className="flex items-center justify-between px-4 py-3 border-b border-outline-variant sticky top-0 bg-surface-container-low z-10">
         <div className="flex items-center gap-1.5 text-on-surface-variant">
           <Icon name="history" size={14} />
-          <span className="text-[11px] font-semibold uppercase tracking-wider">Audit Log</span>
+          <span className="text-[11px] font-semibold uppercase tracking-wider">Activity</span>
         </div>
         <button
           onClick={load}
@@ -108,27 +130,38 @@ export function AuditLogPanel({ resource, resourceId }: Props) {
           </div>
         )}
 
-        {!loading && logs.map(log => (
-          <div
-            key={log.id}
-            className="rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2.5"
-          >
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <Badge variant={actionVariant(log.action)}>
-                {log.action}
-              </Badge>
-              {log.user_id && (
-                <span className="text-[10px] text-on-surface-variant font-mono">
-                  uid:{log.user_id}
-                </span>
-              )}
+        {!loading && logs.map(log => {
+          const userName = log.user_id ? format('user', log.user_id) : 'system'
+          const verb     = verbFromLog(log)
+          const diffs    = describeDiff(log.new_values, log.old_values)
+          return (
+            <div
+              key={log.id}
+              className="rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2.5"
+            >
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <div className="flex items-center gap-1.5">
+                  <Badge variant={actionVariant(log.action)}>{log.action}</Badge>
+                  <span className="text-[11px] text-on-surface font-semibold">{userName}</span>
+                </div>
+                <span className="text-[10px] text-on-surface-variant">{formatTs(log.created_at)}</span>
+              </div>
+              <div className="text-[12px] text-on-surface-variant leading-relaxed">
+                {log.action === 'CREATE' && `${userName} created this ${resource.replace(/-/g, ' ').replace(/s$/, '')}.`}
+                {log.action === 'DELETE' && `${userName} deleted this record.`}
+                {log.action === 'UPDATE' && diffs.length === 0 && `${userName} ${verb} this record.`}
+                {log.action === 'UPDATE' && diffs.length > 0 && (
+                  <>
+                    <span>{userName} changed:</span>
+                    <ul className="mt-0.5 ml-3 list-disc text-[11px]">
+                      {diffs.map((d, i) => <li key={i}>{d}</li>)}
+                    </ul>
+                  </>
+                )}
+              </div>
             </div>
-            <div className="text-[11px] text-on-surface-variant">
-              {formatTs(log.created_at)}
-            </div>
-            <JsonPreview data={log.new_values ?? log.old_values} />
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

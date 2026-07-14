@@ -39,10 +39,18 @@ export type LookupKind =
   | 'purchaseOrder'
   | 'salesOrder'
   | 'documentType'
+  | 'user'
 
 // Endpoint + label formatter per kind. When a shape needs a different label
 // (e.g. banks) add a bespoke entry here and it flows through everything.
-const SOURCES: Record<LookupKind, { url: string; label: (r: Record<string, unknown>) => string; filter?: (r: Record<string, unknown>) => boolean }> = {
+const SOURCES: Record<LookupKind, {
+  url:      string
+  label:    (r: Record<string, unknown>) => string
+  filter?:  (r: Record<string, unknown>) => boolean
+  // Some endpoints return `{ rows: [...] }` shapes instead of a plain array —
+  // extractRows unpacks them.
+  extract?: (raw: unknown) => Record<string, unknown>[]
+}> = {
   product:          { url: '/api/v1/masterdata/products/',                          label: r => join(r.code, r.name) },
   material:         { url: '/api/v1/masterdata/materials/',                         label: r => join(r.code, r.name) },
   warehouse:        { url: '/api/v1/masterdata/inventory/warehouses',               label: r => join(r.code, r.name) },
@@ -68,6 +76,17 @@ const SOURCES: Record<LookupKind, { url: string; label: (r: Record<string, unkno
   productionOrder:  { url: '/api/v1/manufacturing/orders',                          label: r => String(r.code ?? r.id) },
   purchaseOrder:    { url: '/api/v1/procurement/purchase-orders',                   label: r => String(r.code ?? r.id) },
   salesOrder:       { url: '/api/v1/sales/sales-orders',                            label: r => String(r.code ?? r.id) },
+  user:             {
+    url:     '/api/v1/users?limit=200',
+    label:   r => {
+      const first = String(r.first_name ?? '')
+      const last  = String(r.last_name  ?? '')
+      const name  = `${first} ${last}`.trim()
+      return name || String(r.email ?? r.id)
+    },
+    // /users returns { users: [...] } rather than a plain array.
+    extract: raw => Array.isArray(raw) ? raw : ((raw as { users?: Record<string, unknown>[] })?.users ?? []),
+  },
 }
 
 function join(...parts: unknown[]): string {
@@ -95,7 +114,7 @@ const EAGER_KINDS: LookupKind[] = [
   'product', 'material', 'warehouse', 'uom',
   'party', 'supplier', 'customer',
   'workCenter', 'department', 'taxCode', 'category',
-  'documentType',
+  'documentType', 'user',
 ]
 
 export function LookupsProvider({ children }: { children: ReactNode }) {
@@ -110,10 +129,11 @@ export function LookupsProvider({ children }: { children: ReactNode }) {
       return next
     })
     const src = SOURCES[kind]
-    apiGet<Record<string, unknown>[]>(src.url)
-      .then(rows => {
+    apiGet<unknown>(src.url)
+      .then(raw => {
+        const rows = src.extract ? src.extract(raw) : (raw as Record<string, unknown>[] ?? [])
         const map: LookupMap = new Map()
-        for (const r of rows ?? []) {
+        for (const r of rows) {
           if (src.filter && !src.filter(r)) continue
           const id = Number(r.id)
           if (!Number.isFinite(id)) continue

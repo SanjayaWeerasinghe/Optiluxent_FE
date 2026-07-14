@@ -102,7 +102,13 @@ export function DocDetailModal({
   const [dtValues,      setDtValues]      = useState<DocumentFieldValues>({})
 
   // Derive audit resource from endpoint: /api/v1/<module>/... → <module>
-  const auditResource = endpoint.split('/').filter(p => p && p !== 'api' && p !== 'v1')[0] ?? ''
+  // Match BE middleware.extractResource: prefer the doc-kind (second
+  // meaningful path segment) so audit filtering distinguishes e.g.
+  // purchase-orders from goods-receipts inside the same module group.
+  const auditResource = (() => {
+    const parts = endpoint.split('/').filter(p => p && p !== 'api' && p !== 'v1')
+    return parts[1] ?? parts[0] ?? ''
+  })()
 
   // Reset state and load data when modal opens or the parent's doc prop changes
   useEffect(() => {
