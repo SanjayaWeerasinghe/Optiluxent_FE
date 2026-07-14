@@ -55,7 +55,8 @@ const PR_LINE_COLS: Column<Record<string, unknown>>[] = [
 const PR_WORKFLOW: WorkflowAction[] = [
   { label: 'Submit for Approval', action: 'submit',  variant: 'primary', icon: 'send',        visibleStatuses: ['DRAFT'] },
   { label: 'Approve',             action: 'approve', variant: 'primary', icon: 'check_circle', visibleStatuses: ['PENDING_APPROVAL'] },
-  { label: 'Reject',              action: 'reject',  variant: 'danger',  icon: 'cancel',       visibleStatuses: ['PENDING_APPROVAL'] },
+  { label: 'Reject',              action: 'reject',  variant: 'danger',  icon: 'cancel',       visibleStatuses: ['PENDING_APPROVAL'],
+    prompt: { field: 'reason', label: 'Rejection reason' } },
   { label: 'Cancel',              action: 'cancel',  variant: 'danger',  icon: 'block',        visibleStatuses: ['DRAFT', 'PENDING_APPROVAL'] },
 ]
 

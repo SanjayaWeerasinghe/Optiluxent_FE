@@ -32,6 +32,9 @@ const MR_HEADER: FieldDef[] = [
   { key: 'warehouse_id',  label: 'Warehouse',           type: 'select', required: true, loadOptions: warehouseOptions() },
   { key: 'department_id', label: 'Department',          type: 'select', loadOptions: departmentOptions() },
   { key: 'notes',         label: 'Notes',               type: 'textarea', rows: 2, span: true },
+  // Visible only when the MR already exists — surfaces the rejection reason
+  // when Status = REJECTED. Non-REJECTED docs simply see an empty field.
+  { key: 'reject_reason', label: 'Rejection Reason',    type: 'textarea', rows: 2, span: true, editOnly: true },
 ]
 
 const MR_LINE_FIELDS: FieldDef[] = [
@@ -55,7 +58,8 @@ const MR_LINE_COLS: Column<Record<string, unknown>>[] = [
 const MR_WORKFLOW: WorkflowAction[] = [
   { label: 'Submit for Approval', action: 'submit',  variant: 'primary', icon: 'send',         visibleStatuses: ['DRAFT'] },
   { label: 'Approve',             action: 'approve', variant: 'primary', icon: 'check_circle', visibleStatuses: ['PENDING_APPROVAL'] },
-  { label: 'Reject',              action: 'reject',  variant: 'danger',  icon: 'cancel',       visibleStatuses: ['PENDING_APPROVAL'] },
+  { label: 'Reject',              action: 'reject',  variant: 'danger',  icon: 'cancel',       visibleStatuses: ['PENDING_APPROVAL'],
+    prompt: { field: 'reason', label: 'Rejection reason' } },
   { label: 'Cancel',              action: 'cancel',  variant: 'danger',  icon: 'block',        visibleStatuses: ['DRAFT', 'PENDING_APPROVAL'] },
 ]
 

@@ -16,6 +16,14 @@ export interface WorkflowAction {
   variant:         'primary' | 'danger' | 'outline'
   icon?:           string
   visibleStatuses: string[]
+  /** Optional prompt shown before POSTing — collects a single scalar into
+   * the request body (e.g. "amount" for Record Payment, "reason" for
+   * Reject). Cancelling the prompt cancels the action. */
+  prompt?: {
+    field: string
+    label: string
+    type?: 'number' | 'text'
+  }
 }
 
 interface Props {
@@ -195,10 +203,20 @@ export function DocDetailModal({
   }
 
   async function handleAction(wa: WorkflowAction) {
+    let body: Record<string, unknown> = {}
+    if (wa.prompt) {
+      const raw = window.prompt(wa.prompt.label)
+      if (raw === null) return // user cancelled
+      const trimmed = raw.trim()
+      if (!trimmed) { setError(`${wa.prompt.label} is required`); return }
+      body = {
+        [wa.prompt.field]: wa.prompt.type === 'number' ? Number(trimmed) : trimmed,
+      }
+    }
     setActioning(wa.action)
     setError('')
     try {
-      await apiPost(`${endpoint}/${docId}/${wa.action}`, {})
+      await apiPost(`${endpoint}/${docId}/${wa.action}`, body)
       onClose()
       onRefresh()
     } catch (e) {

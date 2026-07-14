@@ -72,7 +72,8 @@ const SQ_LINE_COLS: Column<Record<string, unknown>>[] = [
 const SQ_WORKFLOW: WorkflowAction[] = [
   { label: 'Send to Customer', action: 'submit', variant: 'primary', icon: 'send',         visibleStatuses: ['DRAFT'] },
   { label: 'Accept → Create Sales Order', action: 'accept', variant: 'primary', icon: 'check_circle', visibleStatuses: ['SENT'] },
-  { label: 'Mark Rejected',    action: 'reject', variant: 'danger',  icon: 'cancel',       visibleStatuses: ['SENT'] },
+  { label: 'Mark Rejected',    action: 'reject', variant: 'danger',  icon: 'cancel',       visibleStatuses: ['SENT'],
+    prompt: { field: 'reason', label: 'Rejection reason' } },
   { label: 'Cancel',           action: 'cancel', variant: 'danger',  icon: 'block',        visibleStatuses: ['DRAFT', 'SENT'] },
 ]
 

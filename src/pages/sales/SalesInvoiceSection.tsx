@@ -73,7 +73,8 @@ const SI_LINE_COLS: Column<Record<string, unknown>>[] = [
 
 const SI_WORKFLOW: WorkflowAction[] = [
   { label: 'Post Invoice',    action: 'post',   variant: 'primary', icon: 'post_add',  visibleStatuses: ['DRAFT'] },
-  { label: 'Record Payment',  action: 'pay',    variant: 'primary', icon: 'payments',  visibleStatuses: ['POSTED', 'PARTIAL'] },
+  { label: 'Record Payment',  action: 'pay',    variant: 'primary', icon: 'payments',  visibleStatuses: ['POSTED', 'PARTIAL'],
+    prompt: { field: 'amount', label: 'Payment amount', type: 'number' } },
   { label: 'Cancel',          action: 'cancel', variant: 'danger',  icon: 'block',     visibleStatuses: ['DRAFT', 'POSTED'] },
 ]
 
