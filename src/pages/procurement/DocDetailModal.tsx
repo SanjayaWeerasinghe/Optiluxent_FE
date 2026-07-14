@@ -433,6 +433,7 @@ export function DocDetailModal({
                 typeId={form.document_type_id ? Number(form.document_type_id) : undefined}
                 values={dtValues}
                 onChange={setDtValues}
+                disabled={!headerEditable}
               />
             )}
           </div>

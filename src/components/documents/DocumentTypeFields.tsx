@@ -31,12 +31,13 @@ interface Props {
   typeId?:      number               // the DocumentType currently selected on the doc
   values:       DocumentFieldValues  // controlled from the parent
   onChange:     (next: DocumentFieldValues) => void
+  disabled?:    boolean              // greys the pickers out when the doc is locked
 }
 
 // Renders the picker slots attached to a DocumentType. Empty when no Type is
 // picked or the Type has no fields. Values round-trip through the parent so
 // the parent modal can persist them with a single batch call on save.
-export function DocumentTypeFields({ docKind, docId, typeId, values, onChange }: Props) {
+export function DocumentTypeFields({ docKind, docId, typeId, values, onChange, disabled }: Props) {
   const [fields, setFields] = useState<FieldSchema[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -85,6 +86,7 @@ export function DocumentTypeFields({ docKind, docId, typeId, values, onChange }:
             <FieldControl
               field={def}
               value={values[f.id] ?? ''}
+              disabled={disabled}
               onChange={v => {
                 const next: DocumentFieldValues = { ...values }
                 const asNum = Number(v)
